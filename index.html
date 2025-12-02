@@ -1,62 +1,57 @@
-<!-- JavaScript Files -->
-<script src="js/utils.js"></script>
-<script src="js/database.js"></script>
-<script src="js/kasir.js"></script>
-<script src="js/statistik.js"></script>
-<script src="js/chart.js"></script>
-<script src="js/app.js"></script>
-
-<!-- Simple Initialization Script -->
-<script>
-// Initialize everything when page loads
-window.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, initializing app...');
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nyumil Dimsum Kasir</title>
     
-    // Initialize database first
-    if (typeof database !== 'undefined' && typeof database.init === 'function') {
-        database.init().then(() => {
-            console.log('Database initialized');
-            
-            // Initialize kasir
-            if (typeof initKasir === 'function') {
-                initKasir();
-            }
-            
-            // Initialize statistics
-            if (typeof initStatistik === 'function') {
-                initStatistik();
-            }
-            
-            // Initialize app
-            if (typeof app !== 'undefined' && typeof app.init === 'function') {
-                app.init();
-            }
-            
-            console.log('Application fully loaded');
-        }).catch(error => {
-            console.error('Failed to initialize:', error);
-        });
-    }
-});
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#e63946">
+    
+    <!-- Icons -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
+    <!-- Fonts & Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Charts (DIPINDAH KE HEAD) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+    <!-- ... konten HTML ... -->
 
-// Global error handler
-window.addEventListener('error', function(e) {
-    console.error('Global error:', e.error);
-    alert('Terjadi kesalahan pada aplikasi. Silakan refresh halaman.');
-});
-
-// Online/offline detection
-window.addEventListener('online', function() {
-    console.log('App is online');
-    if (typeof showNotification === 'function') {
-        showNotification('Koneksi internet tersedia', 'success');
-    }
-});
-
-window.addEventListener('offline', function() {
-    console.log('App is offline');
-    if (typeof showNotification === 'function') {
-        showNotification('Tidak ada koneksi internet', 'warning');
-    }
-});
-</script>
+    <!-- JavaScript Files DENGAN URUTAN YANG BENAR -->
+    <script src="js/utils.js"></script>
+    <script src="js/database.js"></script>
+    <script src="js/kasir.js"></script>
+    <script src="js/statistik.js"></script>
+    <script src="js/chart.js"></script>
+    <script src="js/app.js"></script>
+    
+    <!-- Simple init script -->
+    <script>
+    // Tunggu sampai semua script selesai load
+    window.addEventListener('load', function() {
+        console.log('All scripts loaded');
+        
+        // Cek jika semua function tersedia
+        console.log('Database:', typeof database !== 'undefined' ? '✓ Ready' : '✗ Missing');
+        console.log('formatRupiah:', typeof formatRupiah !== 'undefined' ? '✓ Ready' : '✗ Missing');
+        console.log('initKasir:', typeof initKasir !== 'undefined' ? '✓ Ready' : '✗ Missing');
+        console.log('Chart.js:', typeof Chart !== 'undefined' ? '✓ Ready' : '✗ Missing');
+        
+        // Jalankan app
+        if (typeof app !== 'undefined' && typeof app.init === 'function') {
+            app.init();
+        }
+    });
+    </script>
+</body>
+</html>
