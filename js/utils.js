@@ -36,14 +36,34 @@ function getCurrentTime() {
 }
 
 // Show Notification
+// Show Notification - FIXED VERSION
 function showNotification(message, type = 'success') {
-  const notification = document.getElementById('notification');
-  notification.textContent = message;
-  notification.className = `notification ${type}`;
-  notification.style.display = 'block';
-  setTimeout(() => {
-    notification.style.display = 'none';
-  }, 3000);
+    let notification = document.getElementById('notification');
+    
+    // Jika element tidak ada, buat
+    if (!notification) {
+        console.warn('Notification element not found, creating one...');
+        notification = document.createElement('div');
+        notification.id = 'notification';
+        notification.className = 'notification';
+        document.body.appendChild(notification);
+    }
+    
+    try {
+        notification.textContent = message;
+        notification.className = `notification ${type}`;
+        notification.style.display = 'block';
+        
+        setTimeout(() => {
+            if (notification && notification.style) {
+                notification.style.display = 'none';
+            }
+        }, 3000);
+    } catch (error) {
+        console.error('Error showing notification:', error);
+        // Fallback ke console.log
+        console.log(`[${type.toUpperCase()}] ${message}`);
+    }
 }
 
 // Confirm Dialog
