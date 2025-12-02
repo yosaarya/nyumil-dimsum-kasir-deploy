@@ -1,7 +1,158 @@
-// ===== CHART UTILITIES =====
+// ===== CHART.JS HELPER FUNCTIONS =====
 
-// Simple chart wrapper functions
-function createBarChart(canvasId, labels, data, options = {}) {
+// Initialize Chart.js configuration
+Chart.defaults.font.family = "'Poppins', sans-serif";
+Chart.defaults.color = '#333';
+Chart.defaults.plugins.legend.labels.usePointStyle = true;
+
+// Create Bar Chart
+function createBarChart(canvasId, data, options = {}) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return null;
+    
+    const ctx = canvas.getContext('2d');
+    
+    const defaultOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: {
+                    borderDash: [2]
+                }
+            },
+            x: {
+                grid: {
+                    display: false
+                }
+            }
+        }
+    };
+    
+    return new Chart(ctx, {
+        type: 'bar',
+        data: data,
+        options: { ...defaultOptions, ...options }
+    });
+}
+
+// Create Line Chart
+function createLineChart(canvasId, data, options = {}) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return null;
+    
+    const ctx = canvas.getContext('2d');
+    
+    const defaultOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: {
+                    borderDash: [2]
+                }
+            },
+            x: {
+                grid: {
+                    display: false
+                }
+            }
+        },
+        elements: {
+            line: {
+                tension: 0.4
+            },
+            point: {
+                radius: 4,
+                hoverRadius: 6
+            }
+        }
+    };
+    
+    return new Chart(ctx, {
+        type: 'line',
+        data: data,
+        options: { ...defaultOptions, ...options }
+    });
+}
+
+// Create Pie/Doughnut Chart
+function createPieChart(canvasId, data, options = {}) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return null;
+    
+    const ctx = canvas.getContext('2d');
+    
+    const defaultOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'right'
+            }
+        },
+        cutout: options.type === 'doughnut' ? '60%' : 0
+    };
+    
+    return new Chart(ctx, {
+        type: options.type || 'pie',
+        data: data,
+        options: { ...defaultOptions, ...options }
+    });
+}
+
+// Create Horizontal Bar Chart
+function createHorizontalBarChart(canvasId, data, options = {}) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return null;
+    
+    const ctx = canvas.getContext('2d');
+    
+    const defaultOptions = {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            x: {
+                beginAtZero: true,
+                grid: {
+                    borderDash: [2]
+                }
+            },
+            y: {
+                grid: {
+                    display: false
+                }
+            }
+        }
+    };
+    
+    return new Chart(ctx, {
+        type: 'bar',
+        data: data,
+        options: { ...defaultOptions, ...options }
+    });
+}
+
+// Create Revenue vs Profit Chart
+function createRevenueProfitChart(canvasId, dates, revenues, profits) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return null;
     
@@ -10,98 +161,128 @@ function createBarChart(canvasId, labels, data, options = {}) {
     return new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: labels,
-            datasets: [{
-                label: options.label || 'Data',
-                data: data,
-                backgroundColor: options.backgroundColor || '#457b9d',
-                borderColor: options.borderColor || '#1d3557',
-                borderWidth: 1
-            }]
+            labels: dates,
+            datasets: [
+                {
+                    label: 'Pendapatan',
+                    data: revenues,
+                    backgroundColor: '#457b9d',
+                    borderColor: '#1d3557',
+                    borderWidth: 1,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Laba',
+                    data: profits,
+                    type: 'line',
+                    borderColor: '#e63946',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    yAxisID: 'y1',
+                    tension: 0.4
+                }
+            ]
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
             plugins: {
                 legend: {
-                    display: options.showLegend !== false
+                    position: 'top'
                 }
             },
             scales: {
+                x: {
+                    grid: {
+                        display: false
+                    }
+                },
                 y: {
-                    beginAtZero: true
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'Pendapatan (Rp)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return formatRupiah(value).replace('Rp ', '');
+                        }
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Laba (Rp)'
+                    },
+                    grid: {
+                        drawOnChartArea: false
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return formatRupiah(value).replace('Rp ', '');
+                        }
+                    }
                 }
             }
         }
     });
 }
 
-function createLineChart(canvasId, labels, data, options = {}) {
-    const canvas = document.getElementById(canvasId);
-    if (!canvas) return null;
-    
-    const ctx = canvas.getContext('2d');
-    
-    return new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: options.label || 'Data',
-                data: data,
-                borderColor: options.borderColor || '#e63946',
-                backgroundColor: options.backgroundColor || 'rgba(230, 57, 70, 0.1)',
-                tension: 0.4,
-                fill: true
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    display: options.showLegend !== false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
-            }
-        }
-    });
-}
-
-function createPieChart(canvasId, labels, data, options = {}) {
-    const canvas = document.getElementById(canvasId);
-    if (!canvas) return null;
-    
-    const ctx = canvas.getContext('2d');
-    
-    return new Chart(ctx, {
-        type: 'pie',
-        data: {
-            labels: labels,
-            datasets: [{
-                data: data,
-                backgroundColor: options.backgroundColor || [
-                    '#e63946', '#457b9d', '#2a9d8f',
-                    '#e9c46a', '#f4a261', '#9d4edd'
-                ]
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'bottom'
-                }
-            }
-        }
-    });
-}
-
-// Destroy chart
+// Destroy Chart
 function destroyChart(chartInstance) {
     if (chartInstance) {
         chartInstance.destroy();
     }
+}
+
+// Update Chart Data
+function updateChartData(chartInstance, newData) {
+    if (!chartInstance) return;
+    
+    chartInstance.data = newData;
+    chartInstance.update();
+}
+
+// Get Chart.js Colors
+function getChartColors(count) {
+    const baseColors = [
+        '#e63946', '#457b9d', '#2a9d8f',
+        '#e9c46a', '#f4a261', '#9d4edd',
+        '#ff6b6b', '#48cae4', '#52b788',
+        '#ff9e00', '#9b5de5', '#00bbf9'
+    ];
+    
+    if (count <= baseColors.length) {
+        return baseColors.slice(0, count);
+    }
+    
+    // Generate more colors if needed
+    const colors = [...baseColors];
+    for (let i = baseColors.length; i < count; i++) {
+        const hue = (i * 137.508) % 360; // Golden angle approximation
+        colors.push(`hsl(${hue}, 70%, 65%)`);
+    }
+    
+    return colors;
+}
+
+// Format Currency for Chart Tooltips
+function formatCurrencyTooltip(context) {
+    let label = context.dataset.label || '';
+    let value = context.parsed.y !== undefined ? context.parsed.y : context.parsed;
+    
+    if (typeof value === 'number') {
+        return `${label}: ${formatRupiah(value)}`;
+    }
+    
+    return label;
 }
