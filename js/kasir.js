@@ -1,3 +1,12 @@
+// Pastikan DEFAULT_PRODUCTS ada (dari database.js)
+// Jika tidak, kita definisikan di sini
+if (typeof DEFAULT_PRODUCTS === 'undefined') {
+    // Salin dari database.js
+    const DEFAULT_PRODUCTS = [
+        { id: 1, name: "Dimsum Ori Mentai (Small 3pcs)", price: 18000, cost: 10000, icon: "fa-drumstick-bite", category: "paket", description: "Dimsum 3 + Saus Mentai + Topping + Packaging", stock: 100 },
+        // ... dan seterusnya (salin semua dari database.js)
+    ];
+}
 // ===== CART SYSTEM =====
 let cart = [];
 let currentCategory = 'all';
