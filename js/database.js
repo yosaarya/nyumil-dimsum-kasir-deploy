@@ -1,5 +1,3 @@
-import { formatRupiah, getToday, calculateTotal, calculateTotalCost } from './utils.js';
-
 // ===== DATABASE CONFIGURATION =====
 const DB_CONFIG = {
     name: 'nyumil_dimsum_db',
@@ -31,6 +29,23 @@ const DEFAULT_PRODUCTS = [
     { id: 15, name: "Creamy Bolognese 50ml", price: 7000, cost: 3500, icon: "fa-wine-bottle", category: "saus", description: "", stock: 200 },
     { id: 16, name: "Creamy Bolognese 80ml", price: 10000, cost: 5000, icon: "fa-wine-bottle", category: "saus", description: "", stock: 200 }
 ];
+
+// Fungsi helper karena import dihapus
+function calculateTotal(items) {
+    return items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+}
+
+function calculateTotalCost(items) {
+    return items.reduce((sum, item) => sum + (item.cost * item.quantity), 0);
+}
+
+function calculateTotalProfit(items) {
+    return calculateTotal(items) - calculateTotalCost(items);
+}
+
+function getToday() {
+    return new Date().toISOString().split('T')[0];
+}
 
 // ===== DATABASE FUNCTIONS =====
 class Database {
@@ -414,9 +429,9 @@ class Database {
             transaction.date,
             transaction.time,
             transaction.items.map(item => `${item.name} (${item.quantity})`).join('; '),
-            formatRupiah(transaction.subtotal),
-            formatRupiah(transaction.total),
-            formatRupiah(transaction.profit),
+            formatRupiah ? formatRupiah(transaction.subtotal) : `Rp ${transaction.subtotal.toLocaleString()}`,
+            formatRupiah ? formatRupiah(transaction.total) : `Rp ${transaction.total.toLocaleString()}`,
+            formatRupiah ? formatRupiah(transaction.profit) : `Rp ${transaction.profit.toLocaleString()}`,
             transaction.note || ''
         ]);
         
@@ -533,11 +548,5 @@ class Database {
     }
 }
 
-// Create singleton instance
+// Create singleton instance - TANPA EXPORT
 const database = new Database();
-
-// Export functions
-export {
-    database,
-    DEFAULT_PRODUCTS
-};
