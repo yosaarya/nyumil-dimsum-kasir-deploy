@@ -35,34 +35,27 @@ function getCurrentTime() {
     });
 }
 
-// Show Notification
-// Show Notification - FIXED VERSION
+// utils.js - FIXED showNotification
 function showNotification(message, type = 'success') {
-    let notification = document.getElementById('notification');
+    console.log(`Notification [${type}]: ${message}`);
     
-    // Jika element tidak ada, buat
-    if (!notification) {
-        console.warn('Notification element not found, creating one...');
-        notification = document.createElement('div');
-        notification.id = 'notification';
-        notification.className = 'notification';
-        document.body.appendChild(notification);
-    }
-    
+    // Try to show in UI, but don't crash if element doesn't exist
     try {
-        notification.textContent = message;
-        notification.className = `notification ${type}`;
-        notification.style.display = 'block';
-        
-        setTimeout(() => {
-            if (notification && notification.style) {
-                notification.style.display = 'none';
-            }
-        }, 3000);
+        const notification = document.getElementById('notification');
+        if (notification) {
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                if (notification && notification.style) {
+                    notification.style.display = 'none';
+                }
+            }, 3000);
+        }
     } catch (error) {
-        console.error('Error showing notification:', error);
-        // Fallback ke console.log
-        console.log(`[${type.toUpperCase()}] ${message}`);
+        // Silent fail - just log to console
+        console.log(`Could not show notification: ${message}`);
     }
 }
 
