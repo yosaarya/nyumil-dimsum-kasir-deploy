@@ -48,5 +48,63 @@ if (typeof DEFAULT_PRODUCTS !== 'undefined') {
 console.log('cart:', cart);
 console.log('database:', database);
 </script>
+    <!-- DEBUG SCRIPT -->
+<script>
+console.log('=== DEBUG START ===');
+
+// 1. Cek semua element penting
+const elements = {
+    menuGrid: document.getElementById('menuGrid'),
+    orderList: document.getElementById('orderList'),
+    productCategories: document.getElementById('productCategories'),
+    clearBtn: document.getElementById('clearBtn'),
+    checkoutBtn: document.getElementById('checkoutBtn'),
+    notification: document.getElementById('notification'),
+    // Tab contents
+    posTab: document.getElementById('pos-tab'),
+    statsTab: document.getElementById('stats-tab'),
+    historyTab: document.getElementById('history-tab'),
+    productsTab: document.getElementById('products-tab'),
+    // Tabs
+    tabs: document.querySelectorAll('.tab'),
+    tabContents: document.querySelectorAll('.tab-content')
+};
+
+console.log('ELEMENTS CHECK:', elements);
+
+// 2. Cek apakah tab aktif benar
+console.log('Active tab content:', document.querySelector('.tab-content.active'));
+console.log('Active tab button:', document.querySelector('.tab.active'));
+
+// 3. Cek data global
+console.log('GLOBAL VARIABLES:');
+console.log('database:', typeof database !== 'undefined' ? '✅' : '❌');
+console.log('formatRupiah:', typeof formatRupiah !== 'undefined' ? '✅' : '❌');
+console.log('DEFAULT_PRODUCTS:', typeof DEFAULT_PRODUCTS !== 'undefined' ? `✅ (${DEFAULT_PRODUCTS.length} items)` : '❌');
+console.log('cart:', typeof cart !== 'undefined' ? '✅' : '❌');
+
+// 4. Cek CSS
+console.log('CSS LOADED?', document.styleSheets.length > 0 ? '✅' : '❌');
+
+// 5. Test render langsung
+if (elements.menuGrid && typeof DEFAULT_PRODUCTS !== 'undefined' && DEFAULT_PRODUCTS.length > 0) {
+    console.log('Trying to render test product...');
+    const testProduct = DEFAULT_PRODUCTS[0];
+    elements.menuGrid.innerHTML = `
+        <div class="menu-item" style="border: 3px solid red; padding: 15px;">
+            <h3 style="color: red;">TEST: ${testProduct.name}</h3>
+            <p>Harga: ${formatRupiah ? formatRupiah(testProduct.price) : testProduct.price}</p>
+            <button onclick="alert('Test button clicked!')">Test Click</button>
+        </div>
+    `;
+    console.log('Test product rendered with RED border');
+}
+
+// 6. Cek localStorage
+console.log('LocalStorage cart:', localStorage.getItem('nyumil_cart'));
+console.log('LocalStorage transactions:', localStorage.getItem('nyumil_transactions'));
+
+console.log('=== DEBUG END ===');
+</script>
 </body>
 </html>
