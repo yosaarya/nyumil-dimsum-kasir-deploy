@@ -1,207 +1,326 @@
-import { database } from './database.js';
-import { formatRupiah, showNotification, calculateTotal, calculateTotalProfit } from './utils.js';
+// ===== CART SYSTEM =====
+let cart = [];
+let currentCategory = 'all';
 
-// ===== KASIR STATE =====
-class Kasir {
-    constructor() {
-        this.currentOrder = [];
-        this.orderNote = '';
-        this.selectedCategory = 'all';
-        this.isInitialized = false;
+// Initialize Cart
+function initCart() {
+    const savedCart = localStorage.getItem('nyumil_cart');
+    if (savedCart) {
+        cart = JSON.parse(savedCart);
+        updateCartDisplay();
     }
+}
 
-    // Initialize Kasir
-    async init() {
-        if (this.isInitialized) return;
-        
-        await this.setupEventListeners();
-        await this.renderCategories();
-        await this.renderProducts();
-        
-        this.isInitialized = true;
-        console.log('Kasir initialized');
-    }
+// Save Cart to LocalStorage
+function saveCart() {
+    localStorage.setItem('nyumil_cart', JSON.stringify(cart));
+}
 
-    // Setup Event Listeners
-    async setupEventListeners() {
-        // Category buttons
-        document.getElementById('productCategories')?.addEventListener('click', (e) => {
-            if (e.target.classList.contains('category-btn')) {
-                this.selectCategory(e.target.dataset.category);
-            }
-        });
-
-        // Order actions
-        document.getElementById('clearBtn')?.addEventListener('click', () => this.clearOrder());
-        document.getElementById('checkoutBtn')?.addEventListener('click', () => this.checkout());
-        
-        // Print receipt
-        document.getElementById('printReceiptBtn')?.addEventListener('click', () => this.printReceipt());
-    }
-
-    // ===== CATEGORY FUNCTIONS =====
-    async renderCategories() {
-        const categoriesContainer = document.getElementById('productCategories');
-        if (!categoriesContainer) return;
-
-        const products = await database.getProducts();
-        const categories = ['all', ...new Set(products.map(p => p.category))];
-        
-        categoriesContainer.innerHTML = categories.map(category => `
-            <button class="category-btn ${category === this.selectedCategory ? 'active' : ''}" 
-                    data-category="${category}">
-                ${this.getCategoryLabel(category)}
-            </button>
-        `).join('');
-    }
-
-    getCategoryLabel(category) {
-        const labels = {
-            'all': 'Semua',
-            'paket': 'Paket',
-            'satuan': 'Satuan',
-            'topping': 'Topping',
-            'saus': 'Saus'
-        };
-        return labels[category] || category;
-    }
-
-    selectCategory(category) {
-        this.selectedCategory = category;
-        this.renderCategories();
-        this.renderProducts();
-    }
-
-    // ===== PRODUCT FUNCTIONS =====
-    async renderProducts() {
-        const productsGrid = document.getElementById('menuGrid');
-        if (!productsGrid) return;
-
-        const products = await database.getProducts();
-        const filteredProducts = this.selectedCategory === 'all' 
-            ? products 
-            : products.filter(p => p.category === this.selectedCategory);
-
-        productsGrid.innerHTML = filteredProducts.map(product => `
-            <div class="menu-item" data-id="${product.id}">
-                <div class="menu-icon">
-                    <i class="fas ${product.icon}"></i>
-                </div>
-                <div class="menu-name">${product.name}</div>
-                <div class="menu-price">${formatRupiah(product.price)}</div>
-                ${product.stock !== undefined ? `
-                    <div class="menu-stock ${product.stock <= 10 ? 'low-stock' : ''}">
-                        Stok: ${product.stock}
-                    </div>
-                ` : ''}
-                <div class="menu-cost">HPP: ${formatRupiah(product.cost)}</div>
-            </div>
-        `).join('');
-
-        // Add click event to products
-        productsGrid.querySelectorAll('.menu-item').forEach(item => {
-            item.addEventListener('click', (e) => {
-                const productId = parseInt(e.currentTarget.dataset.id);
-                this.addToOrder(productId);
-            });
+// Add to Cart
+function addToCart(product) {
+    const existingItem = cart.find(item => item.id === product.id);
+    
+    if (existingItem) {
+        existingItem.quantity += 1;
+    } else {
+        cart.push({
+            ...product,
+            quantity: 1
         });
     }
+    
+    saveCart();
+    updateCartDisplay();
+    showNotification(`${product.name} ditambahkan ke keranjang`, 'success');
+}
 
-    // ===== ORDER FUNCTIONS =====
-    async addToOrder(productId, quantity = 1) {
-        const product = await database.getProduct(productId);
-        if (!product) {
-            showNotification('Produk tidak ditemukan', 'error');
-            return;
-        }
+// Remove from Cart
+function removeFromCart(productId) {
+    cart = cart.filter(item => item.id !== productId);
+    saveCart();
+    updateCartDisplay();
+    showNotification('Item dihapus dari keranjang', 'info');
+}
 
-        // Check stock
-        if (product.stock !== undefined && product.stock < quantity) {
-            showNotification(`Stok ${product.name} tidak mencukupi!`, 'error');
-            return;
-        }
-
-        const existingItem = this.currentOrder.find(item => item.id === productId);
+// Update Quantity
+function updateQuantity(productId, change) {
+    const item = cart.find(item => item.id === productId);
+    if (item) {
+        item.quantity += change;
         
-        if (existingItem) {
-            existingItem.quantity += quantity;
+        if (item.quantity <= 0) {
+            removeFromCart(productId);
         } else {
-            this.currentOrder.push({
-                ...product,
-                quantity: quantity
-            });
+            saveCart();
+            updateCartDisplay();
         }
-
-        this.updateOrderDisplay();
-        showNotification(`${product.name} ditambahkan ke pesanan`);
     }
+}
 
-    updateOrderDisplay() {
-        const orderList = document.getElementById('orderList');
-        const emptyOrder = document.getElementById('emptyOrder');
-        const orderCount = document.getElementById('orderCount');
-        const subtotalAmount = document.getElementById('subtotalAmount');
-        const totalAmount = document.getElementById('totalAmount');
+// Clear Cart
+function clearCart() {
+    if (cart.length === 0) {
+        showNotification('Keranjang sudah kosong', 'info');
+        return;
+    }
+    
+    if (confirm('Hapus semua item dari keranjang?')) {
+        cart = [];
+        saveCart();
+        updateCartDisplay();
+        showNotification('Keranjang dikosongkan', 'success');
+    }
+}
 
-        if (!orderList || !emptyOrder) return;
-
-        // Clear order list
+// Update Cart Display
+function updateCartDisplay() {
+    const orderList = document.getElementById('orderList');
+    const emptyOrder = document.getElementById('emptyOrder');
+    const orderCount = document.getElementById('orderCount');
+    const subtotalAmount = document.getElementById('subtotalAmount');
+    const totalAmount = document.getElementById('totalAmount');
+    
+    if (!orderList || !emptyOrder) return;
+    
+    // Hide empty message if cart has items
+    emptyOrder.style.display = cart.length === 0 ? 'flex' : 'none';
+    
+    // Update order count
+    if (orderCount) {
+        orderCount.textContent = cart.length;
+    }
+    
+    // Calculate totals
+    let subtotal = 0;
+    cart.forEach(item => {
+        subtotal += item.price * item.quantity;
+    });
+    
+    // Update amounts
+    if (subtotalAmount) {
+        subtotalAmount.textContent = formatRupiah(subtotal);
+    }
+    
+    if (totalAmount) {
+        totalAmount.textContent = formatRupiah(subtotal);
+    }
+    
+    // Render cart items
+    if (orderList) {
         orderList.innerHTML = '';
-
-        if (this.currentOrder.length === 0) {
-            emptyOrder.style.display = 'flex';
-            orderList.appendChild(emptyOrder);
-            orderCount.textContent = '0';
-            subtotalAmount.textContent = formatRupiah(0);
-            totalAmount.textContent = formatRupiah(0);
-            return;
-        }
-
-        emptyOrder.style.display = 'none';
-
-        let subtotal = 0;
-        let totalItems = 0;
-
-        // Render order items
-        this.currentOrder.forEach((item, index) => {
+        
+        cart.forEach(item => {
             const itemTotal = item.price * item.quantity;
-            subtotal += itemTotal;
-            totalItems += item.quantity;
-
+            
             const orderItem = document.createElement('div');
             orderItem.className = 'order-item';
             orderItem.innerHTML = `
                 <div class="item-info">
-                    <div class="item-name">${item.name}</div>
-                    <div class="item-details">
-                        <span>${formatRupiah(item.price)} × ${item.quantity}</span>
-                        <span>${formatRupiah(itemTotal)}</span>
-                    </div>
+                    <span class="item-name">${item.name}</span>
+                    <span class="item-price">${formatRupiah(item.price)}</span>
                 </div>
                 <div class="item-controls">
-                    <button class="qty-btn decrease" data-index="${index}">-</button>
-                    <span class="qty-value">${item.quantity}</span>
-                    <button class="qty-btn increase" data-index="${index}">+</button>
+                    <button class="btn-quantity" onclick="updateQuantity(${item.id}, -1)">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                    <span class="quantity">${item.quantity}</span>
+                    <button class="btn-quantity" onclick="updateQuantity(${item.id}, 1)">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <button class="btn-remove" onclick="removeFromCart(${item.id})">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </div>
-                <div class="item-total">${formatRupiah(itemTotal)}</div>
+                <div class="item-total">
+                    ${formatRupiah(itemTotal)}
+                </div>
             `;
-
+            
             orderList.appendChild(orderItem);
         });
+    }
+}
 
-        // Add event listeners for quantity controls
-        orderList.querySelectorAll('.qty-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const index = parseInt(e.target.dataset.index);
-                const isIncrease = e.target.classList.contains('increase');
-                this.updateQuantity(index, isIncrease ? 1 : -1);
+// ===== PRODUCT DISPLAY =====
+function renderProducts() {
+    const menuGrid = document.getElementById('menuGrid');
+    const categoriesContainer = document.getElementById('productCategories');
+    
+    if (!menuGrid || !categoriesContainer) return;
+    
+    // Get unique categories
+    const categories = ['all', 'paket', 'satuan', 'topping', 'saus'];
+    
+    // Render categories
+    categoriesContainer.innerHTML = '';
+    categories.forEach(category => {
+        const button = document.createElement('button');
+        button.className = `category-btn ${category === currentCategory ? 'active' : ''}`;
+        button.textContent = category === 'all' ? 'Semua' : 
+                           category === 'paket' ? 'Paket' :
+                           category === 'satuan' ? 'Satuan' :
+                           category === 'topping' ? 'Topping' : 'Saus';
+        button.onclick = () => {
+            currentCategory = category;
+            renderProducts();
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.remove('active');
             });
+            button.classList.add('active');
+        };
+        categoriesContainer.appendChild(button);
+    });
+    
+    // Render products based on current category
+    let productsToShow = DEFAULT_PRODUCTS;
+    if (currentCategory !== 'all') {
+        productsToShow = DEFAULT_PRODUCTS.filter(p => p.category === currentCategory);
+    }
+    
+    menuGrid.innerHTML = '';
+    productsToShow.forEach(product => {
+        const productCard = document.createElement('div');
+        productCard.className = 'menu-item';
+        productCard.onclick = () => addToCart(product);
+        productCard.innerHTML = `
+            <div class="menu-item-content">
+                <div class="menu-icon">
+                    <i class="fas ${product.icon}"></i>
+                </div>
+                <h4>${product.name}</h4>
+                <p class="menu-description">${product.description || ''}</p>
+                <p class="price">${formatRupiah(product.price)}</p>
+                <button class="btn-add">
+                    <i class="fas fa-plus"></i> Tambah
+                </button>
+            </div>
+        `;
+        menuGrid.appendChild(productCard);
+    });
+}
+
+// ===== CHECKOUT PROCESS =====
+function checkout() {
+    if (cart.length === 0) {
+        showNotification('Keranjang kosong! Tambahkan produk terlebih dahulu.', 'error');
+        return;
+    }
+    
+    // Create transaction
+    const transaction = {
+        items: cart.map(item => ({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            cost: item.cost || 0,
+            quantity: item.quantity
+        })),
+        subtotal: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+        total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+        date: getToday(),
+        time: new Date().toLocaleTimeString('id-ID')
+    };
+    
+    // Save transaction
+    if (database && typeof database.addTransaction === 'function') {
+        database.addTransaction(transaction).then(() => {
+            // Clear cart
+            cart = [];
+            saveCart();
+            updateCartDisplay();
+            
+            // Show success
+            showNotification('Transaksi berhasil!', 'success');
+            
+            // Show receipt
+            showReceipt(transaction);
         });
+    } else {
+        showNotification('Database tidak tersedia', 'error');
+    }
+}
 
-        // Update summary
-        orderCount.textContent = totalItems.toString();
-        subtotalAmount.textContent = formatR
+// Show Receipt
+function showReceipt(transaction) {
+    const receiptModal = document.getElementById('receiptModal');
+    if (!receiptModal) return;
+    
+    let receiptHTML = `
+        <div class="modal-content">
+            <div class="receipt-header">
+                <h3><i class="fas fa-receipt"></i> Struk Pembayaran</h3>
+                <p>No: ${Date.now().toString().slice(-6)}</p>
+            </div>
+            <div class="receipt-body">
+                <div class="receipt-info">
+                    <p><strong>Tanggal:</strong> ${transaction.date}</p>
+                    <p><strong>Waktu:</strong> ${transaction.time}</p>
+                </div>
+                <div class="receipt-items">
+                    <h4>Items:</h4>
+    `;
+    
+    transaction.items.forEach(item => {
+        receiptHTML += `
+            <div class="receipt-item">
+                <span>${item.name} (${item.quantity}x)</span>
+                <span>${formatRupiah(item.price * item.quantity)}</span>
+            </div>
+        `;
+    });
+    
+    receiptHTML += `
+                </div>
+                <div class="receipt-total">
+                    <p><strong>Total:</strong> ${formatRupiah(transaction.total)}</p>
+                </div>
+                <div class="receipt-footer">
+                    <p>Terima kasih telah berbelanja!</p>
+                </div>
+            </div>
+            <div class="receipt-actions">
+                <button class="btn btn-primary" onclick="printReceipt()">
+                    <i class="fas fa-print"></i> Cetak
+                </button>
+                <button class="btn btn-secondary" onclick="closeReceipt()">
+                    <i class="fas fa-times"></i> Tutup
+                </button>
+            </div>
+        </div>
+    `;
+    
+    receiptModal.innerHTML = receiptHTML;
+    receiptModal.style.display = 'flex';
+}
 
-        // ===== Tambahkan baris ini di bagian PALING AKHIR file kasir.js =====
-export default new Kasir();
+// Print Receipt
+function printReceipt() {
+    window.print();
+}
 
+// Close Receipt
+function closeReceipt() {
+    const receiptModal = document.getElementById('receiptModal');
+    if (receiptModal) {
+        receiptModal.style.display = 'none';
+    }
+}
+
+// ===== INITIALIZATION =====
+function initKasir() {
+    initCart();
+    renderProducts();
+    
+    // Setup event listeners
+    const clearBtn = document.getElementById('clearBtn');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearCart);
+    }
+    
+    const checkoutBtn = document.getElementById('checkoutBtn');
+    if (checkoutBtn) {
+        checkoutBtn.addEventListener('click', checkout);
+    }
+    
+    console.log('Kasir system initialized');
+}
