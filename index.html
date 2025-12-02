@@ -1,110 +1,49 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nyumil Dimsum Kasir</title>
-    
-    <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#e63946">
-    
-    <!-- Charts -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Fonts & Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Styles -->
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/responsive.css">
-</head>
-<body>
-    <!-- ... semua HTML konten Anda ... -->
-
-    <!-- JavaScript Files -->
-    <script src="js/utils.js"></script>
-    <script src="js/database.js"></script>
-    <script src="js/kasir.js"></script>
-    <script src="js/statistik.js"></script>
-    <script src="js/chart.js"></script>
-    <script src="js/app.js"></script>
-    
-   <script>
-// Debug script - cek apakah element HTML ada
-console.log('=== DEBUG ELEMENTS ===');
-console.log('menuGrid:', document.getElementById('menuGrid'));
-console.log('orderList:', document.getElementById('orderList'));
-console.log('productCategories:', document.getElementById('productCategories'));
-console.log('clearBtn:', document.getElementById('clearBtn'));
-console.log('checkoutBtn:', document.getElementById('checkoutBtn'));
-
-// Cek data
-console.log('=== DEBUG DATA ===');
-console.log('DEFAULT_PRODUCTS:', typeof DEFAULT_PRODUCTS);
-if (typeof DEFAULT_PRODUCTS !== 'undefined') {
-    console.log('Product count:', DEFAULT_PRODUCTS.length);
-}
-console.log('cart:', cart);
-console.log('database:', database);
-</script>
-<!-- DEBUG SCRIPT -->
-<script>
-console.log('=== DEBUG START ===');
-
-// 1. Cek semua element penting
-const elements = {
-    menuGrid: document.getElementById('menuGrid'),
-    orderList: document.getElementById('orderList'),
-    productCategories: document.getElementById('productCategories'),
-    clearBtn: document.getElementById('clearBtn'),
-    checkoutBtn: document.getElementById('checkoutBtn'),
-    notification: document.getElementById('notification'),
-    // Tab contents
-    posTab: document.getElementById('pos-tab'),
-    statsTab: document.getElementById('stats-tab'),
-    historyTab: document.getElementById('history-tab'),
-    productsTab: document.getElementById('products-tab'),
-    // Tabs
-    tabs: document.querySelectorAll('.tab'),
-    tabContents: document.querySelectorAll('.tab-content')
-};
-
-console.log('ELEMENTS CHECK:', elements);
-
-// 2. Cek apakah tab aktif benar
-console.log('Active tab content:', document.querySelector('.tab-content.active'));
-console.log('Active tab button:', document.querySelector('.tab.active'));
-
-// 3. Cek data global
-console.log('GLOBAL VARIABLES:');
-console.log('database:', typeof database !== 'undefined' ? '✅' : '❌');
-console.log('formatRupiah:', typeof formatRupiah !== 'undefined' ? '✅' : '❌');
-console.log('DEFAULT_PRODUCTS:', typeof DEFAULT_PRODUCTS !== 'undefined' ? `✅ (${DEFAULT_PRODUCTS.length} items)` : '❌');
-console.log('cart:', typeof cart !== 'undefined' ? '✅' : '❌');
-
-// 4. Cek CSS
-console.log('CSS LOADED?', document.styleSheets.length > 0 ? '✅' : '❌');
-
-// 5. Test render langsung
-if (elements.menuGrid && typeof DEFAULT_PRODUCTS !== 'undefined' && DEFAULT_PRODUCTS.length > 0) {
-    console.log('Trying to render test product...');
-    const testProduct = DEFAULT_PRODUCTS[0];
-    elements.menuGrid.innerHTML = `
-        <div class="menu-item" style="border: 3px solid red; padding: 15px;">
-            <h3 style="color: red;">TEST: ${testProduct.name}</h3>
-            <p>Harga: ${formatRupiah ? formatRupiah(testProduct.price) : testProduct.price}</p>
-            <button onclick="alert('Test button clicked!')">Test Click</button>
+<!-- POS Tab Content -->
+<div class="tab-content active" id="pos-tab">
+    <div class="pos-container">
+        <!-- Product Categories -->
+        <div class="categories" id="productCategories">
+            <!-- Categories akan diisi -->
         </div>
-    `;
-    console.log('Test product rendered with RED border');
-}
 
-// 6. Cek localStorage
-console.log('LocalStorage cart:', localStorage.getItem('nyumil_cart'));
-console.log('LocalStorage transactions:', localStorage.getItem('nyumil_transactions'));
+        <!-- Product Grid -->
+        <div class="menu-grid" id="menuGrid">
+            <!-- Products akan diisi -->
+        </div>
 
-console.log('=== DEBUG END ===');
-</script>
-</body>
-</html>
+        <!-- Order Panel -->
+        <div class="order-panel">
+            <div class="order-header">
+                <h3><i class="fas fa-shopping-cart"></i> Pesanan Aktif</h3>
+                <span class="badge" id="orderCount">0</span>
+            </div>
+            
+            <div class="order-list" id="orderList">
+                <div class="empty-order" id="emptyOrder">
+                    <i class="fas fa-shopping-cart"></i>
+                    <p>Belum ada pesanan</p>
+                </div>
+            </div>
+
+            <div class="order-summary">
+                <div class="summary-row">
+                    <span>Subtotal:</span>
+                    <span id="subtotalAmount">Rp 0</span>
+                </div>
+                <div class="summary-row">
+                    <span>Total:</span>
+                    <span class="total-amount" id="totalAmount">Rp 0</span>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn btn-secondary" id="clearBtn">
+                    <i class="fas fa-trash"></i> Hapus
+                </button>
+                <button class="btn btn-primary" id="checkoutBtn">
+                    <i class="fas fa-check"></i> Bayar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
