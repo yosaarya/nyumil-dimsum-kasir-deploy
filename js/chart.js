@@ -3,6 +3,41 @@
         Chart.defaults.color = '#333';
         Chart.defaults.plugins.legend.labels.usePointStyle = true;
 
+// chart.js - WAIT FOR CHART.JS TO LOAD
+(function() {
+    function initChartFunctions() {
+        // ===== CHART.JS HELPER FUNCTIONS =====
+        // Initialize Chart.js configuration
+        Chart.defaults.font.family = "'Poppins', sans-serif";
+        Chart.defaults.color = '#333';
+        Chart.defaults.plugins.legend.labels.usePointStyle = true;
+
+        // ... semua kode chart functions ...
+    }
+
+    // Tunggu sampai Chart.js tersedia
+    if (typeof Chart !== 'undefined') {
+        initChartFunctions();
+    } else {
+        // Coba lagi setelah 100ms
+        const checkInterval = setInterval(() => {
+            if (typeof Chart !== 'undefined') {
+                clearInterval(checkInterval);
+                initChartFunctions();
+                console.log('Chart.js loaded successfully');
+            }
+        }, 100);
+        
+        // Timeout setelah 5 detik
+        setTimeout(() => {
+            if (typeof Chart === 'undefined') {
+                console.error('Chart.js failed to load after 5 seconds');
+                clearInterval(checkInterval);
+            }
+        }, 5000);
+    }
+})();
+
         // Create Bar Chart
         window.createBarChart = function(canvasId, data, options = {}) {
             const canvas = document.getElementById(canvasId);
