@@ -1,7 +1,7 @@
-import kasir from '/kasir.js';
-import statistics from '/statistik.js';
-import { database } from '/database.js';
-import { showNotification } from '/utils.js';
+import kasir from "/kasir.js";
+import statistics from "/statistik.js";
+import { database } from "/database.js";
+import { showNotification } from "/utils.js";
 
 // ===== MAIN APPLICATION =====
 class NyumilKasirApp {
