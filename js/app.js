@@ -1,8 +1,3 @@
-import kasir from "/kasir.js";
-import statistics from "/statistik.js";
-import { database } from "/database.js";
-import { showNotification } from "/utils.js";
-
 // ===== MAIN APPLICATION =====
 class NyumilKasirApp {
     constructor() {
@@ -17,32 +12,43 @@ class NyumilKasirApp {
 
         try {
             // Initialize database
-            await database.init();
+            if (database && typeof database.init === 'function') {
+                await database.init();
+            } else {
+                console.error('Database not available');
+                return;
+            }
             
             // Setup event listeners
             await this.setupEventListeners();
             
-            // Initialize modules
-            await kasir.init();
-            await statistics.init();
+            // Initialize modules if available
+            if (typeof initKasir === 'function') {
+                initKasir();
+            }
+            
+            if (typeof initStatistik === 'function') {
+                initStatistik();
+            }
             
             // Set initial tab
             this.switchTab('pos');
-            
-            // Check for updates
-            this.checkForUpdates();
             
             this.isInitialized = true;
             console.log('Nyumil Kasir App initialized');
             
             // Show welcome notification
             setTimeout(() => {
-                showNotification('Aplikasi Nyumil Dimsum Kasir siap digunakan!');
+                if (typeof showNotification === 'function') {
+                    showNotification('Aplikasi Nyumil Dimsum Kasir siap digunakan!');
+                }
             }, 1000);
             
         } catch (error) {
             console.error('App initialization failed:', error);
-            showNotification('Gagal menginisialisasi aplikasi', 'error');
+            if (typeof showNotification === 'function') {
+                showNotification('Gagal menginisialisasi aplikasi', 'error');
+            }
         }
     }
 
@@ -59,26 +65,29 @@ class NyumilKasirApp {
         // Online/Offline detection
         window.addEventListener('online', () => {
             this.isOnline = true;
-            showNotification('Koneksi internet tersedia', 'success');
+            if (typeof showNotification === 'function') {
+                showNotification('Koneksi internet tersedia', 'success');
+            }
         });
 
         window.addEventListener('offline', () => {
             this.isOnline = false;
-            showNotification('Tidak ada koneksi internet', 'warning');
+            if (typeof showNotification === 'function') {
+                showNotification('Tidak ada koneksi internet', 'warning');
+            }
         });
 
         // Before unload - save data
         window.addEventListener('beforeunload', (e) => {
-            this.saveBeforeUnload();
+            if (database && typeof database.saveToLocalStorage === 'function') {
+                database.saveToLocalStorage();
+            }
         });
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             this.handleKeyboardShortcuts(e);
         });
-
-        // PWA install prompt
-        this.setupPWAInstall();
     }
 
     // ===== TAB MANAGEMENT =====
@@ -104,7 +113,9 @@ class NyumilKasirApp {
         // Load tab-specific data
         switch (tabId) {
             case 'stats':
-                statistics.loadStatistics();
+                if (typeof loadStatistics === 'function') {
+                    loadStatistics();
+                }
                 break;
             case 'history':
                 this.loadHistory();
@@ -117,10 +128,14 @@ class NyumilKasirApp {
 
     // ===== HISTORY TAB =====
     async loadHistory() {
-        const historyContainer = document.getElementById('historyTable');
+        const historyContainer = document.querySelector('#history-tab .history-container');
         if (!historyContainer) return;
 
         try {
+            if (!database || typeof database.getTransactions !== 'function') {
+                throw new Error('Database tidak tersedia');
+            }
+            
             const transactions = await database.getTransactions();
             
             if (transactions.length === 0) {
@@ -139,47 +154,52 @@ class NyumilKasirApp {
             });
 
             const tableHTML = `
-                <table class="history-table">
-                    <thead>
-                        <tr>
-                            <th>Tanggal</th>
-                            <th>Waktu</th>
-                            <th>ID Transaksi</th>
-                            <th>Items</th>
-                            <th>Total</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${transactions.map(transaction => `
+                <div class="history-header">
+                    <h3>Riwayat Transaksi</h3>
+                    <button class="btn btn-primary" onclick="app.refreshHistory()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+                <div class="table-responsive">
+                    <table class="history-table">
+                        <thead>
                             <tr>
-                                <td>${transaction.date}</td>
-                                <td>${transaction.time}</td>
-                                <td>#${transaction.id}</td>
-                                <td>
-                                    <div class="transaction-items">
-                                        ${transaction.items.map(item => 
-                                            `${item.name} (${item.quantity})`
-                                        ).join(', ')}
-                                    </div>
-                                    ${transaction.note ? `<div class="transaction-note">${transaction.note}</div>` : ''}
-                                </td>
-                                <td>${formatRupiah(transaction.total)}</td>
-                                <td>
-                                    <button class="btn-icon" onclick="app.viewTransaction(${transaction.id})" title="Lihat">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="btn-icon" onclick="app.reprintTransaction(${transaction.id})" title="Cetak Ulang">
-                                        <i class="fas fa-print"></i>
-                                    </button>
-                                    <button class="btn-icon btn-danger" onclick="app.deleteTransaction(${transaction.id})" title="Hapus">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </td>
+                                <th>Tanggal</th>
+                                <th>Waktu</th>
+                                <th>ID</th>
+                                <th>Items</th>
+                                <th>Total</th>
+                                <th>Aksi</th>
                             </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            ${transactions.map(transaction => `
+                                <tr>
+                                    <td>${transaction.date}</td>
+                                    <td>${transaction.time}</td>
+                                    <td>#${transaction.id}</td>
+                                    <td>
+                                        <div class="transaction-items">
+                                            ${transaction.items.map(item => 
+                                                `${item.name} (${item.quantity})`
+                                            ).join(', ')}
+                                        </div>
+                                        ${transaction.note ? `<div class="transaction-note">${transaction.note}</div>` : ''}
+                                    </td>
+                                    <td>${formatRupiah(transaction.total)}</td>
+                                    <td>
+                                        <button class="btn-icon" onclick="app.viewTransaction(${transaction.id})" title="Lihat">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn-icon btn-danger" onclick="app.deleteTransaction(${transaction.id})" title="Hapus">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
             `;
 
             historyContainer.innerHTML = tableHTML;
@@ -190,6 +210,7 @@ class NyumilKasirApp {
                 <div class="error-state">
                     <i class="fas fa-exclamation-triangle"></i>
                     <p>Gagal memuat riwayat transaksi</p>
+                    <button class="btn btn-secondary" onclick="app.loadHistory()">Coba Lagi</button>
                 </div>
             `;
         }
@@ -197,10 +218,14 @@ class NyumilKasirApp {
 
     // ===== PRODUCTS TAB =====
     async loadProducts() {
-        const productsContainer = document.getElementById('productsTable');
+        const productsContainer = document.querySelector('#products-tab .products-container');
         if (!productsContainer) return;
 
         try {
+            if (!database || typeof database.getProducts !== 'function') {
+                throw new Error('Database tidak tersedia');
+            }
+            
             const products = await database.getProducts();
             
             const tableHTML = `
@@ -210,46 +235,48 @@ class NyumilKasirApp {
                         <i class="fas fa-plus"></i> Tambah Produk
                     </button>
                 </div>
-                <table class="products-table">
-                    <thead>
-                        <tr>
-                            <th>Nama</th>
-                            <th>Kategori</th>
-                            <th>Harga</th>
-                            <th>HPP</th>
-                            <th>Stok</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${products.map(product => `
+                <div class="table-responsive">
+                    <table class="products-table">
+                        <thead>
                             <tr>
-                                <td>
-                                    <div class="product-info">
-                                        <i class="fas ${product.icon}"></i>
-                                        <span>${product.name}</span>
-                                    </div>
-                                </td>
-                                <td>${product.category}</td>
-                                <td>${formatRupiah(product.price)}</td>
-                                <td>${formatRupiah(product.cost)}</td>
-                                <td>
-                                    <span class="stock-badge ${product.stock <= 10 ? 'low' : ''}">
-                                        ${product.stock || '∞'}
-                                    </span>
-                                </td>
-                                <td>
-                                    <button class="btn-icon" onclick="app.editProduct(${product.id})" title="Edit">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn-icon btn-danger" onclick="app.deleteProduct(${product.id})" title="Hapus">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </td>
+                                <th>Nama</th>
+                                <th>Kategori</th>
+                                <th>Harga</th>
+                                <th>HPP</th>
+                                <th>Stok</th>
+                                <th>Aksi</th>
                             </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            ${products.map(product => `
+                                <tr>
+                                    <td>
+                                        <div class="product-info">
+                                            <i class="fas ${product.icon || 'fa-box'}"></i>
+                                            <span>${product.name}</span>
+                                        </div>
+                                    </td>
+                                    <td>${product.category}</td>
+                                    <td>${formatRupiah(product.price)}</td>
+                                    <td>${formatRupiah(product.cost)}</td>
+                                    <td>
+                                        <span class="stock-badge ${(product.stock || 0) <= 10 ? 'low' : ''}">
+                                            ${product.stock || '∞'}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn-icon" onclick="app.editProduct(${product.id})" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn-icon btn-danger" onclick="app.deleteProduct(${product.id})" title="Hapus">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
             `;
 
             productsContainer.innerHTML = tableHTML;
@@ -260,6 +287,7 @@ class NyumilKasirApp {
                 <div class="error-state">
                     <i class="fas fa-exclamation-triangle"></i>
                     <p>Gagal memuat daftar produk</p>
+                    <button class="btn btn-secondary" onclick="app.loadProducts()">Coba Lagi</button>
                 </div>
             `;
         }
@@ -281,24 +309,6 @@ class NyumilKasirApp {
         }
     }
 
-    async reprintTransaction(transactionId) {
-        try {
-            const transaction = await database.getTransaction(transactionId);
-            if (!transaction) {
-                showNotification('Transaksi tidak ditemukan', 'error');
-                return;
-            }
-
-            // Generate receipt
-            const receiptContent = kasir.generateReceiptContent(transaction, transaction.change || 0);
-            kasir.printReceipt(receiptContent);
-            
-            showNotification('Struk sedang dicetak ulang');
-        } catch (error) {
-            showNotification('Gagal mencetak ulang', 'error');
-        }
-    }
-
     async deleteTransaction(transactionId) {
         if (!confirm('Hapus transaksi ini? Tindakan ini tidak dapat dibatalkan.')) {
             return;
@@ -315,6 +325,10 @@ class NyumilKasirApp {
         } catch (error) {
             showNotification('Gagal menghapus transaksi', 'error');
         }
+    }
+
+    refreshHistory() {
+        this.loadHistory();
     }
 
     // ===== PRODUCT MANAGEMENT =====
@@ -348,7 +362,10 @@ class NyumilKasirApp {
             if (success) {
                 showNotification('Produk berhasil dihapus');
                 this.loadProducts();
-                kasir.renderProducts();
+                // Refresh product display in kasir tab if function exists
+                if (typeof renderProducts === 'function') {
+                    renderProducts();
+                }
             } else {
                 showNotification('Gagal menghapus produk', 'error');
             }
@@ -374,7 +391,7 @@ class NyumilKasirApp {
         modal.innerHTML = `
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>Detail Transaksi #${transaction.id}</h2>
+                    <h3>Detail Transaksi #${transaction.id}</h3>
                     <button class="modal-close">&times;</button>
                 </div>
                 <div class="modal-body">
@@ -383,18 +400,8 @@ class NyumilKasirApp {
                             <span>Tanggal:</span>
                             <span>${transaction.date} ${transaction.time}</span>
                         </div>
-                        <div class="detail-row">
-                            <span>Metode Pembayaran:</span>
-                            <span>${transaction.paymentMethod?.toUpperCase() || 'TUNAI'}</span>
-                        </div>
-                        ${transaction.note ? `
-                            <div class="detail-row">
-                                <span>Catatan:</span>
-                                <span>${transaction.note}</span>
-                            </div>
-                        ` : ''}
                         
-                        <h3>Items:</h3>
+                        <h4>Items:</h4>
                         <table class="items-table">
                             <thead>
                                 <tr>
@@ -424,22 +431,11 @@ class NyumilKasirApp {
                                 <span>Total:</span>
                                 <span class="total">${formatRupiah(transaction.total)}</span>
                             </div>
-                            ${transaction.cashAmount ? `
-                                <div class="summary-row">
-                                    <span>Bayar:</span>
-                                    <span>${formatRupiah(transaction.cashAmount)}</span>
-                                </div>
-                                <div class="summary-row">
-                                    <span>Kembali:</span>
-                                    <span>${formatRupiah(transaction.change || 0)}</span>
-                                </div>
-                            ` : ''}
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Tutup</button>
-                    <button class="btn btn-primary" onclick="app.reprintTransaction(${transaction.id})">Cetak Ulang</button>
                 </div>
             </div>
         `;
@@ -460,7 +456,7 @@ class NyumilKasirApp {
         modal.innerHTML = `
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>${isEdit ? 'Edit' : 'Tambah'} Produk</h2>
+                    <h3>${isEdit ? 'Edit' : 'Tambah'} Produk</h3>
                     <button class="modal-close">&times;</button>
                 </div>
                 <div class="modal-body">
@@ -575,169 +571,13 @@ class NyumilKasirApp {
             
             // Refresh product lists
             this.loadProducts();
-            kasir.renderProducts();
+            if (typeof renderProducts === 'function') {
+                renderProducts();
+            }
 
         } catch (error) {
             showNotification('Gagal menyimpan produk', 'error');
         }
-    }
-
-    // ===== SETTINGS FUNCTIONS =====
-    async showSettings() {
-        const settings = await database.getSettings();
-        
-        const modal = document.createElement('div');
-        modal.className = 'modal active';
-        
-        modal.innerHTML = `
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>Pengaturan</h2>
-                    <button class="modal-close">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <form id="settingsForm">
-                        <div class="form-group">
-                            <label for="businessName">Nama Usaha</label>
-                            <input type="text" id="businessName" class="form-control" 
-                                   value="${settings.businessName}">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="businessAddress">Alamat</label>
-                            <textarea id="businessAddress" class="form-control" rows="2">${settings.businessAddress}</textarea>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="taxRate">Pajak (%)</label>
-                                <input type="number" id="taxRate" class="form-control" 
-                                       value="${settings.taxRate}" min="0" max="100" step="0.1">
-                            </div>
-                            <div class="form-group">
-                                <label for="serviceCharge">Service Charge (%)</label>
-                                <input type="number" id="serviceCharge" class="form-control" 
-                                       value="${settings.serviceCharge}" min="0" max="100" step="0.1">
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="receiptFooter">Footer Struk</label>
-                            <textarea id="receiptFooter" class="form-control" rows="2">${settings.receiptFooter}</textarea>
-                        </div>
-                        
-                        <div class="form-check">
-                            <input type="checkbox" id="autoPrint" class="form-check-input" 
-                                   ${settings.autoPrint ? 'checked' : ''}>
-                            <label for="autoPrint" class="form-check-label">Cetak otomatis setelah transaksi</label>
-                        </div>
-                        
-                        <div class="form-check">
-                            <input type="checkbox" id="backupReminder" class="form-check-input" 
-                                   ${settings.backupReminder ? 'checked' : ''}>
-                            <label for="backupReminder" class="form-check-label">Ingatkan backup data</label>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Batal</button>
-                    <button class="btn btn-primary" onclick="app.saveSettings()">Simpan</button>
-                    <button class="btn btn-warning" onclick="app.resetSettings()">Reset</button>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(modal);
-
-        modal.querySelector('.modal-close').addEventListener('click', () => {
-            document.body.removeChild(modal);
-        });
-    }
-
-    async saveSettings() {
-        const settings = {
-            businessName: document.getElementById('businessName').value.trim(),
-            businessAddress: document.getElementById('businessAddress').value.trim(),
-            taxRate: parseFloat(document.getElementById('taxRate').value) || 0,
-            serviceCharge: parseFloat(document.getElementById('serviceCharge').value) || 0,
-            receiptFooter: document.getElementById('receiptFooter').value.trim(),
-            autoPrint: document.getElementById('autoPrint').checked,
-            backupReminder: document.getElementById('backupReminder').checked
-        };
-
-        try {
-            await database.updateSettings(settings);
-            document.querySelector('.modal.active')?.remove();
-            showNotification('Pengaturan berhasil disimpan');
-        } catch (error) {
-            showNotification('Gagal menyimpan pengaturan', 'error');
-        }
-    }
-
-    async resetSettings() {
-        if (!confirm('Reset semua pengaturan ke nilai default?')) {
-            return;
-        }
-
-        try {
-            await database.initializeSettings();
-            document.querySelector('.modal.active')?.remove();
-            showNotification('Pengaturan telah direset');
-        } catch (error) {
-            showNotification('Gagal mereset pengaturan', 'error');
-        }
-    }
-
-    // ===== BACKUP FUNCTIONS =====
-    async backupData() {
-        try {
-            const backup = await database.createBackup();
-            const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `nyumil-backup-${new Date().toISOString().split('T')[0]}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            showNotification('Backup data berhasil!');
-        } catch (error) {
-            showNotification('Gagal membuat backup', 'error');
-        }
-    }
-
-    async restoreData() {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.json';
-        
-        input.onchange = async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            
-            if (!confirm('Restore data dari backup? Data saat ini akan diganti.')) {
-                return;
-            }
-            
-            try {
-                const text = await file.text();
-                const backup = JSON.parse(text);
-                
-                const success = await database.restoreBackup(backup);
-                if (success) {
-                    showNotification('Data berhasil direstore!');
-                    location.reload(); // Reload to apply changes
-                } else {
-                    showNotification('Gagal restore data', 'error');
-                }
-            } catch (error) {
-                showNotification('File backup tidak valid', 'error');
-            }
-        };
-        
-        input.click();
     }
 
     // ===== KEYBOARD SHORTCUTS =====
@@ -777,26 +617,6 @@ class NyumilKasirApp {
                 this.loadHistory();
                 break;
                 
-            case 'F6':
-                e.preventDefault();
-                kasir.clearOrder();
-                break;
-                
-            case 'F7':
-                e.preventDefault();
-                kasir.checkout();
-                break;
-                
-            case 'F8':
-                e.preventDefault();
-                this.backupData();
-                break;
-                
-            case 'F9':
-                e.preventDefault();
-                this.showSettings();
-                break;
-                
             case 'F12':
                 e.preventDefault();
                 // Do nothing - prevent dev tools
@@ -804,126 +624,25 @@ class NyumilKasirApp {
         }
     }
 
-    // ===== PWA INSTALL =====
-    setupPWAInstall() {
-        let deferredPrompt;
-        
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            
-            // Show install button
-            const installBtn = document.createElement('button');
-            installBtn.className = 'pwa-install-btn';
-            installBtn.innerHTML = '<i class="fas fa-download"></i> Install App';
-            installBtn.onclick = () => this.installPWA(deferredPrompt, installBtn);
-            
-            document.querySelector('.container')?.appendChild(installBtn);
-        });
-    }
-
-    async installPWA(deferredPrompt, installBtn) {
-        if (!deferredPrompt) return;
-        
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        
-        if (outcome === 'accepted') {
-            installBtn.remove();
-            showNotification('Aplikasi berhasil diinstall!');
-        }
-        
-        deferredPrompt = null;
-    }
-
-    // ===== UPDATE CHECK =====
-    async checkForUpdates() {
-        if (!this.isOnline) return;
-        
-        try {
-            const response = await fetch('/version.json');
-            const remoteVersion = await response.json();
-            const localVersion = localStorage.getItem('app_version');
-            
-            if (remoteVersion.version !== localVersion) {
-                this.showUpdateNotification(remoteVersion);
-            }
-        } catch (error) {
-            // Silent fail - offline or no version file
-        }
-    }
-
-    showUpdateNotification(version) {
-        const notification = document.createElement('div');
-        notification.className = 'update-notification';
-        notification.innerHTML = `
-            <div class="update-content">
-                <i class="fas fa-sync-alt"></i>
-                <span>Update tersedia (v${version.version})</span>
-                <button class="btn btn-sm btn-primary" onclick="app.applyUpdate()">Update</button>
-                <button class="btn btn-sm btn-secondary" onclick="this.parentElement.parentElement.remove()">Nanti</button>
-            </div>
-        `;
-        
-        document.body.appendChild(notification);
-    }
-
-    applyUpdate() {
-        localStorage.clear();
-        location.reload();
-    }
-
     // ===== UTILITY FUNCTIONS =====
-    saveBeforeUnload() {
-        // Save any pending data
-        database.saveToLocalStorage();
-    }
-
     getAppInfo() {
         return {
             name: 'Nyumil Dimsum Kasir',
             version: '1.0.0',
-            database: {
-                transactions: database.transactions.length,
-                products: database.products.length,
-                stats: Object.keys(database.dailyStats).length
-            },
-            settings: database.settings
+            database: database ? {
+                transactions: database.transactions ? database.transactions.length : 0,
+                products: database.products ? database.products.length : 0,
+                stats: database.dailyStats ? Object.keys(database.dailyStats).length : 0
+            } : null
         };
-    }
-
-    // ===== ERROR HANDLING =====
-    setupErrorHandling() {
-        window.onerror = (message, source, lineno, colno, error) => {
-            console.error('Global error:', { message, source, lineno, colno, error });
-            showNotification('Terjadi kesalahan', 'error');
-            return false;
-        };
-
-        window.addEventListener('unhandledrejection', (event) => {
-            console.error('Unhandled promise rejection:', event.reason);
-            showNotification('Terjadi kesalahan sistem', 'error');
-        });
     }
 }
 
-// ===== GLOBAL FUNCTIONS =====
-// Make app functions available globally for onclick handlers
-window.app = new NyumilKasirApp();
-
-// Helper function for formatting
-window.formatRupiah = (amount) => {
-    return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0
-    }).format(amount);
-};
+// ===== GLOBAL SETUP =====
+// Make app instance globally available
+const app = new NyumilKasirApp();
 
 // Initialize app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    window.app.init();
+    app.init();
 });
-
-// Export app instance
-export default window.app;
