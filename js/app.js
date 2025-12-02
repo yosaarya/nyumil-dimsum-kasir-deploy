@@ -1,4 +1,4 @@
-// app.js - UPDATED VERSION WITH TAB LOADING
+// app.js - COMPLETE FIXED VERSION
 let appInitialized = false;
 
 const app = {
@@ -32,6 +32,7 @@ const app = {
             
         } catch (error) {
             console.error('App error:', error);
+            this.showError(error);
         }
     },
     
@@ -93,7 +94,7 @@ const app = {
         const statsContainer = document.querySelector('#stats-tab .stats-container');
         if (!statsContainer) return;
         
-        console.log('Loading statistics...');
+        console.log('📊 Loading statistics...');
         
         // Check if statistics module is available
         if (typeof initStatistik === 'function' && typeof loadStatistics === 'function') {
@@ -118,81 +119,194 @@ const app = {
         const statsContainer = document.querySelector('#stats-tab .stats-container');
         if (!statsContainer) return;
         
-        const transactions = JSON.parse(localStorage.getItem('nyumil_transactions') || '[]');
+        console.log('📊 Calculating statistics...');
         
+        // 1. Get transactions from localStorage
+        let transactions = [];
+        try {
+            const transactionsJson = localStorage.getItem('nyumil_transactions');
+            if (transactionsJson) {
+                transactions = JSON.parse(transactionsJson);
+                console.log(`✅ Found ${transactions.length} transactions`);
+            }
+        } catch (error) {
+            console.error('Error parsing transactions:', error);
+        }
+        
+        // 2. Also check for dailyStats
+        let dailyStats = {};
+        try {
+            const dailyStatsJson = localStorage.getItem('nyumil_dailyStats');
+            if (dailyStatsJson) {
+                dailyStats = JSON.parse(dailyStatsJson);
+                console.log(`✅ Found daily stats for ${Object.keys(dailyStats).length} days`);
+            }
+        } catch (error) {
+            console.error('Error parsing dailyStats:', error);
+        }
+        
+        // 3. Calculate statistics
         let totalRevenue = 0;
         let totalTransactions = transactions.length;
         let totalItems = 0;
+        let totalProfit = 0;
         
-        transactions.forEach(transaction => {
-            totalRevenue += transaction.total || 0;
-            if (transaction.items) {
-                transaction.items.forEach(item => {
-                    totalItems += item.quantity || 0;
-                });
-            }
+        // Calculate from transactions
+        if (transactions.length > 0) {
+            transactions.forEach(transaction => {
+                // Revenue
+                if (transaction.total !== undefined) {
+                    totalRevenue += Number(transaction.total);
+                } else if (transaction.subtotal !== undefined) {
+                    totalRevenue += Number(transaction.subtotal);
+                }
+                
+                // Items
+                if (transaction.items && Array.isArray(transaction.items)) {
+                    transaction.items.forEach(item => {
+                        totalItems += Number(item.quantity) || 0;
+                    });
+                }
+                
+                // Profit
+                if (transaction.profit !== undefined) {
+                    totalProfit += Number(transaction.profit);
+                }
+            });
+        }
+        
+        // Also calculate from dailyStats if available
+        if (Object.keys(dailyStats).length > 0) {
+            Object.values(dailyStats).forEach(day => {
+                totalRevenue += Number(day.revenue) || 0;
+                totalTransactions += Number(day.transactions) || 0;
+                totalItems += Number(day.itemsSold) || 0;
+                totalProfit += Number(day.profit) || 0;
+            });
+        }
+        
+        // 4. Calculate profit (use actual if available, otherwise estimate 40%)
+        let displayProfit = totalProfit;
+        if (totalProfit === 0 && totalRevenue > 0) {
+            displayProfit = totalRevenue * 0.4; // 40% margin estimate
+        }
+        
+        console.log('📈 Statistics calculated:', {
+            revenue: totalRevenue,
+            transactions: totalTransactions,
+            items: totalItems,
+            profit: displayProfit
         });
         
-        const estimatedProfit = totalRevenue * 0.5; // 50% margin estimate
+        // 5. Format helper
+        const formatNumber = (num) => {
+            if (typeof num !== 'number' || isNaN(num)) return '0';
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        };
         
+        const formatValue = (value) => {
+            if (typeof formatRupiah === 'function') {
+                return formatRupiah(value);
+            }
+            return `Rp ${formatNumber(value)}`;
+        };
+        
+        // 6. Create HTML
         statsContainer.innerHTML = `
             <div class="stats-header">
                 <h2><i class="fas fa-chart-bar"></i> Statistik Penjualan</h2>
+                <small>${new Date().toLocaleDateString('id-ID')}</small>
             </div>
             
             <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin: 20px 0;">
-                <div class="stat-card">
-                    <div class="stat-icon" style="background: #e63946; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
-                        <i class="fas fa-money-bill-wave" style="color: white; font-size: 24px;"></i>
+                <div class="stat-card" style="background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                    <div class="stat-icon" style="background: #e63946; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
+                        <i class="fas fa-money-bill-wave" style="color: white; font-size: 28px;"></i>
                     </div>
-                    <h3>Total Pendapatan</h3>
-                    <p class="stat-value" style="font-size: 24px; font-weight: bold; margin: 10px 0;">${formatRupiah(totalRevenue)}</p>
-                    <small style="color: #666;">Semua waktu</small>
+                    <h3 style="text-align: center; margin-bottom: 10px; color: #333;">Total Pendapatan</h3>
+                    <p class="stat-value" style="font-size: 28px; font-weight: bold; margin: 10px 0; text-align: center; color: #e63946;">
+                        ${formatValue(totalRevenue)}
+                    </p>
+                    <small style="display: block; text-align: center; color: #666;">${totalTransactions} transaksi</small>
                 </div>
                 
-                <div class="stat-card">
-                    <div class="stat-icon" style="background: #457b9d; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
-                        <i class="fas fa-receipt" style="color: white; font-size: 24px;"></i>
+                <div class="stat-card" style="background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                    <div class="stat-icon" style="background: #457b9d; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
+                        <i class="fas fa-receipt" style="color: white; font-size: 28px;"></i>
                     </div>
-                    <h3>Total Transaksi</h3>
-                    <p class="stat-value" style="font-size: 24px; font-weight: bold; margin: 10px 0;">${totalTransactions}</p>
-                    <small style="color: #666;">Semua waktu</small>
+                    <h3 style="text-align: center; margin-bottom: 10px; color: #333;">Total Transaksi</h3>
+                    <p class="stat-value" style="font-size: 28px; font-weight: bold; margin: 10px 0; text-align: center; color: #457b9d;">
+                        ${formatNumber(totalTransactions)}
+                    </p>
+                    <small style="display: block; text-align: center; color: #666;">Semua waktu</small>
                 </div>
                 
-                <div class="stat-card">
-                    <div class="stat-icon" style="background: #2a9d8f; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
-                        <i class="fas fa-box" style="color: white; font-size: 24px;"></i>
+                <div class="stat-card" style="background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                    <div class="stat-icon" style="background: #2a9d8f; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
+                        <i class="fas fa-box" style="color: white; font-size: 28px;"></i>
                     </div>
-                    <h3>Item Terjual</h3>
-                    <p class="stat-value" style="font-size: 24px; font-weight: bold; margin: 10px 0;">${totalItems}</p>
-                    <small style="color: #666;">Semua waktu</small>
+                    <h3 style="text-align: center; margin-bottom: 10px; color: #333;">Item Terjual</h3>
+                    <p class="stat-value" style="font-size: 28px; font-weight: bold; margin: 10px 0; text-align: center; color: #2a9d8f;">
+                        ${formatNumber(totalItems)}
+                    </p>
+                    <small style="display: block; text-align: center; color: #666;">
+                        ${transactions.length > 0 ? 'Rata-rata ' + Math.round(totalItems / totalTransactions) + ' item/transaksi' : ''}
+                    </small>
                 </div>
                 
-                <div class="stat-card">
-                    <div class="stat-icon" style="background: #e9c46a; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
-                        <i class="fas fa-chart-line" style="color: white; font-size: 24px;"></i>
+                <div class="stat-card" style="background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                    <div class="stat-icon" style="background: #e9c46a; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
+                        <i class="fas fa-chart-line" style="color: white; font-size: 28px;"></i>
                     </div>
-                    <h3>Estimasi Laba</h3>
-                    <p class="stat-value" style="font-size: 24px; font-weight: bold; margin: 10px 0;">${formatRupiah(estimatedProfit)}</p>
-                    <small style="color: #666;">Margin 50%</small>
+                    <h3 style="text-align: center; margin-bottom: 10px; color: #333;">Estimasi Laba</h3>
+                    <p class="stat-value" style="font-size: 28px; font-weight: bold; margin: 10px 0; text-align: center; color: #e9c46a;">
+                        ${formatValue(displayProfit)}
+                    </p>
+                    <small style="display: block; text-align: center; color: #666;">
+                        ${totalProfit > 0 ? 'Laba aktual' : 'Estimasi 40% margin'}
+                    </small>
                 </div>
             </div>
             
-            <div class="recent-transactions" style="background: white; padding: 20px; border-radius: 10px; margin-top: 30px;">
-                <h3>5 Transaksi Terakhir</h3>
+            <div class="recent-transactions" style="background: white; padding: 25px; border-radius: 10px; margin-top: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                <h3 style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+                    <i class="fas fa-history"></i> 5 Transaksi Terakhir
+                    <span style="font-size: 14px; color: #666; margin-left: auto;">
+                        Total: ${formatValue(totalRevenue)}
+                    </span>
+                </h3>
                 ${transactions.length > 0 ? 
-                    transactions.slice(-5).reverse().map(t => `
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee;">
-                            <div>
-                                <strong>#${t.id}</strong>
-                                <small style="display: block; color: #666;">${t.date} ${t.time || ''}</small>
+                    transactions.slice(-5).reverse().map(t => {
+                        const transactionDate = t.date || 'Tanggal tidak diketahui';
+                        const transactionTime = t.time || '';
+                        const transactionTotal = t.total || t.subtotal || 0;
+                        const itemsCount = t.items ? t.items.length : 0;
+                        
+                        return `
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; background: #f9f9f9; border-radius: 8px; margin-bottom: 8px;">
+                                <div style="flex: 1;">
+                                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                                        <strong style="color: #333;">#${t.id || 'N/A'}</strong>
+                                        <span style="background: #e63946; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px;">
+                                            ${itemsCount} item
+                                        </span>
+                                    </div>
+                                    <small style="display: block; color: #666;">
+                                        <i class="far fa-calendar"></i> ${transactionDate}
+                                        ${transactionTime ? ` <i class="far fa-clock"></i> ${transactionTime}` : ''}
+                                    </small>
+                                </div>
+                                <div style="font-weight: bold; color: #2a9d8f; font-size: 18px;">
+                                    ${formatValue(transactionTotal)}
+                                </div>
                             </div>
-                            <div style="font-weight: bold; color: #2a9d8f;">
-                                ${formatRupiah(t.total)}
-                            </div>
-                        </div>
-                    `).join('') :
-                    '<p style="text-align: center; color: #666; padding: 20px;">Belum ada transaksi</p>'
+                        `;
+                    }).join('') :
+                    `<div style="text-align: center; padding: 30px;">
+                        <i class="fas fa-chart-bar" style="font-size: 48px; color: #ddd; margin-bottom: 15px;"></i>
+                        <h4 style="color: #666;">Belum ada transaksi</h4>
+                        <p style="color: #999;">Lakukan transaksi pertama untuk melihat statistik</p>
+                    </div>`
                 }
             </div>
         `;
@@ -203,7 +317,7 @@ const app = {
         const historyContainer = document.querySelector('#history-tab .history-container');
         if (!historyContainer) return;
         
-        console.log('Loading history...');
+        console.log('📜 Loading history...');
         
         const transactions = JSON.parse(localStorage.getItem('nyumil_transactions') || '[]');
         
@@ -300,7 +414,7 @@ const app = {
         const productsContainer = document.querySelector('#products-tab .products-container');
         if (!productsContainer) return;
         
-        console.log('Loading products...');
+        console.log('📦 Loading products...');
         
         if (typeof DEFAULT_PRODUCTS === 'undefined') {
             productsContainer.innerHTML = '<p style="color: #e63946;">Data produk tidak tersedia</p>';
@@ -379,6 +493,19 @@ const app = {
         
         html += `</div>`;
         productsContainer.innerHTML = html;
+    },
+    
+    showError(error) {
+        console.error('App error:', error);
+        const notification = document.getElementById('notification');
+        if (notification) {
+            notification.textContent = `Error: ${error.message || 'Unknown error'}`;
+            notification.style.display = 'block';
+            notification.style.background = '#e63946';
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 5000);
+        }
     }
 };
 
