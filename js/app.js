@@ -1,8 +1,17 @@
-// ===== SIMPLE APP INITIALIZATION =====
+// app.js - FIXED VERSION (No double init)
+let appInitialized = false;
+
 const app = {
     currentTab: 'pos',
     
     async init() {
+        // Prevent double initialization
+        if (appInitialized) {
+            console.log('App already initialized');
+            return;
+        }
+        
+        appInitialized = true;
         console.log('App starting...');
         
         try {
@@ -10,6 +19,9 @@ const app = {
             if (typeof database !== 'undefined' && typeof database.init === 'function') {
                 await database.init();
                 console.log('Database initialized');
+            } else {
+                console.error('Database not found');
+                return;
             }
             
             // Setup tabs
@@ -29,6 +41,9 @@ const app = {
             this.switchTab('pos');
             
             console.log('App initialized successfully!');
+            
+            // Remove the setTimeout notification to avoid errors
+            // showNotification('Aplikasi siap digunakan!');
             
         } catch (error) {
             console.error('App init failed:', error);
@@ -74,7 +89,10 @@ const app = {
     }
 };
 
-// Start app when DOM is ready
+// Initialize only once when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    app.init();
+    // Check if app is already initialized by other scripts
+    if (!appInitialized) {
+        app.init();
+    }
 });
