@@ -168,13 +168,13 @@ function updateCartDisplay() {
                     <small>${formatRupiah(item.price)}</small>
                 </div>
                 <div style="flex: 1; text-align: center;">
-                    <button onclick="updateQuantity(${item.id}, -1)" style="padding: 5px 10px;">-</button>
-                    <span style="margin: 0 10px;">${item.quantity}</span>
-                    <button onclick="updateQuantity(${item.id}, 1)" style="padding: 5px 10px;">+</button>
+                    <button onclick="updateQuantity(${item.id}, -1)" style="padding: 5px 10px; background: #e63946; color: white; border: none; border-radius: 4px; cursor: pointer;">-</button>
+                    <span style="margin: 0 10px; font-weight: bold;">${item.quantity}</span>
+                    <button onclick="updateQuantity(${item.id}, 1)" style="padding: 5px 10px; background: #2a9d8f; color: white; border: none; border-radius: 4px; cursor: pointer;">+</button>
                 </div>
                 <div style="flex: 1; text-align: right;">
                     <strong>${formatRupiah(itemTotal)}</strong><br>
-                    <button onclick="removeFromCart(${item.id})" style="padding: 2px 5px; font-size: 12px; margin-top: 5px;">Hapus</button>
+                    <button onclick="removeFromCart(${item.id})" style="padding: 3px 8px; font-size: 12px; margin-top: 5px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer;">Hapus</button>
                 </div>
             `;
             
@@ -261,48 +261,78 @@ function renderProducts() {
     console.log(`✅ Rendered ${productsToShow.length} products with event listeners`);
 }
 
-// ===== CHECKOUT PROCESS =====
+// ===== CHECKOUT PROCESS - IMPROVED VERSION =====
 function checkout() {
     if (cart.length === 0) {
         alert('Keranjang kosong!');
         return;
     }
     
+    // Calculate totals
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const profit = cart.reduce((sum, item) => {
+        const itemCost = item.cost || 0;
+        return sum + ((item.price - itemCost) * item.quantity);
+    }, 0);
     
-    if (confirm(`Total: ${formatRupiah(total)}\n\nKonfirmasi pembayaran?`)) {
-        // Buat ID transaksi unik
+    // Show confirmation with details
+    const itemList = cart.map(item => 
+        `${item.name} x${item.quantity} = ${formatRupiah(item.price * item.quantity)}`
+    ).join('\n');
+    
+    const confirmMessage = `
+💳 KONFIRMASI PEMBAYARAN
+
+${itemList}
+
+━━━━━━━━━━━━━━━━━━━
+Subtotal: ${formatRupiah(total)}
+Total: ${formatRupiah(total)}
+
+Lakukan pembayaran?
+    `.trim();
+    
+    if (confirm(confirmMessage)) {
+        // Create transaction with proper structure
         const transactionId = Date.now();
+        const today = new Date().toISOString().split('T')[0];
+        const now = new Date().toLocaleTimeString('id-ID', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            second: '2-digit'
+        });
         
-        // Buat objek transaksi lengkap
         const transaction = {
             id: transactionId,
-            date: new Date().toISOString().split('T')[0],
-            time: new Date().toLocaleTimeString(),
+            date: today,
+            time: now,
             items: cart.map(item => ({
                 id: item.id,
                 name: item.name,
                 price: item.price,
                 cost: item.cost || 0,
                 quantity: item.quantity,
-                itemTotal: item.price * item.quantity
+                total: item.price * item.quantity
             })),
             subtotal: total,
-            total: total,
-            profit: cart.reduce((sum, item) => sum + ((item.price - (item.cost || 0)) * item.quantity), 0)
+            total: total, // Make sure this property exists
+            profit: profit
         };
         
         console.log('💾 Saving transaction:', transaction);
         
-        // Simpan ke localStorage (untuk riwayat)
+        // ===== SAVE TO LOCALSTORAGE =====
+        
+        // 1. Save to transactions (for history)
         const transactions = JSON.parse(localStorage.getItem('nyumil_transactions') || '[]');
         transactions.push(transaction);
         localStorage.setItem('nyumil_transactions', JSON.stringify(transactions));
+        console.log('✅ Transactions saved:', transactions.length);
         
-        // Juga simpan ke dailyStats (untuk statistik)
-        const today = transaction.date;
+        // 2. Save to dailyStats (for statistics)
         const dailyStats = JSON.parse(localStorage.getItem('nyumil_dailyStats') || '{}');
         
+        // Initialize today's stats if not exists
         if (!dailyStats[today]) {
             dailyStats[today] = {
                 revenue: 0,
@@ -313,15 +343,16 @@ function checkout() {
             };
         }
         
-        // Update stats
+        // Update today's stats
         dailyStats[today].revenue += total;
         dailyStats[today].transactions += 1;
-        dailyStats[today].profit += transaction.profit;
+        dailyStats[today].profit += profit;
         
         // Update items sold
         transaction.items.forEach(item => {
             dailyStats[today].itemsSold += item.quantity;
             
+            // Initialize item stats if not exists
             if (!dailyStats[today].items[item.id]) {
                 dailyStats[today].items[item.id] = {
                     name: item.name,
@@ -331,31 +362,70 @@ function checkout() {
                 };
             }
             
+            // Update item stats
             dailyStats[today].items[item.id].quantity += item.quantity;
-            dailyStats[today].items[item.id].revenue += item.itemTotal;
+            dailyStats[today].items[item.id].revenue += item.total;
             dailyStats[today].items[item.id].profit += (item.price - item.cost) * item.quantity;
         });
         
         localStorage.setItem('nyumil_dailyStats', JSON.stringify(dailyStats));
+        console.log('✅ Daily stats updated:', dailyStats[today]);
         
-        console.log('✅ Transaction saved to:', {
-            transactions: transactions.length,
-            dailyStats: dailyStats[today]
-        });
+        // ===== SHOW SUCCESS MESSAGE =====
         
-        // Tampilkan notifikasi
+        const successMessage = `
+✅ TRANSAKSI BERHASIL!
+
+ID Transaksi: #${transactionId}
+Tanggal: ${today} ${now}
+Total: ${formatRupiah(total)}
+
+Terima kasih atas pembeliannya!
+        `.trim();
+        
+        // Show notification if available, otherwise alert
         if (typeof showNotification === 'function') {
             showNotification(`Transaksi #${transactionId} berhasil! Total: ${formatRupiah(total)}`, 'success');
         } else {
-            alert(`✅ Transaksi berhasil!\nID: #${transactionId}\nTotal: ${formatRupiah(total)}`);
+            alert(successMessage);
         }
         
-        // Reset cart
+        // ===== RESET CART =====
         cart = [];
         saveCart();
         updateCartDisplay();
+        
+        // ===== AUTO-REFRESH STATISTICS IF STATS TAB IS ACTIVE =====
+        const activeTab = document.querySelector('.tab.active');
+        if (activeTab && activeTab.dataset.tab === 'stats') {
+            console.log('🔄 Stats tab is active, refreshing statistics...');
+            
+            // Wait a moment for data to be saved
+            setTimeout(() => {
+                // Try to load statistics via app module
+                if (typeof app !== 'undefined' && typeof app.loadStatisticsTab === 'function') {
+                    app.loadStatisticsTab();
+                } 
+                // Try to load via statistik module
+                else if (typeof loadStatistics === 'function') {
+                    loadStatistics();
+                }
+                // Fallback to simple refresh
+                else {
+                    console.log('⚠️ No statistics module found, refreshing page...');
+                    location.reload();
+                }
+            }, 300);
+        }
+        
+        // ===== DEBUG: SHOW DATA IN CONSOLE =====
+        console.log('📊 DEBUG - Data in localStorage after checkout:');
+        console.log('1. Transactions:', JSON.parse(localStorage.getItem('nyumil_transactions') || '[]').length, 'items');
+        console.log('2. DailyStats:', JSON.parse(localStorage.getItem('nyumil_dailyStats') || '{}'));
+        console.log('3. Today\'s stats:', dailyStats[today] || 'No stats for today');
     }
 }
+
 // ===== INITIALIZATION =====
 function initKasir() {
     console.log('🚀 initKasir() called');
