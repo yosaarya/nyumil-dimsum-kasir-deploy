@@ -25,15 +25,6 @@ if (typeof DEFAULT_PRODUCTS === 'undefined') {
 let cart = [];
 let currentCategory = 'all';
 
-// Initialize Cart
-function initCart() {
-    const savedCart = localStorage.getItem('nyumil_cart');
-    if (savedCart) {
-        cart = JSON.parse(savedCart);
-        updateCartDisplay();
-    }
-}
-
 // Save Cart to LocalStorage
 function saveCart() {
     localStorage.setItem('nyumil_cart', JSON.stringify(cart));
@@ -517,7 +508,6 @@ function renderAllProducts(products) {
     console.log('Kasir system initialized');
 }
 // kasir.js - WITH FALLBACK RENDER
-let currentCategory = 'all';
 
 // Initialize Cart
 function initCart() {
