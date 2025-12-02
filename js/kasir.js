@@ -347,7 +347,135 @@ function initKasir() {
         console.log('Alternative search:', menuGridAlt);
     }
     
-    renderProducts();
+    function renderProducts() {
+    console.log('renderProducts called');
+    
+    const menuGrid = document.getElementById('menuGrid');
+    const categoriesContainer = document.getElementById('productCategories');
+    
+    console.log('menuGrid:', menuGrid);
+    console.log('categoriesContainer:', categoriesContainer);
+    
+    if (!menuGrid) {
+        console.error('menuGrid element not found!');
+        return;
+    }
+    
+    if (!categoriesContainer) {
+        console.error('categoriesContainer element not found!');
+    }
+    
+    // DEBUG: Cek DEFAULT_PRODUCTS
+    console.log('DEFAULT_PRODUCTS available?', typeof DEFAULT_PRODUCTS);
+    
+    let productsToShow = [];
+    
+    // Coba berbagai sumber data
+    if (typeof DEFAULT_PRODUCTS !== 'undefined' && DEFAULT_PRODUCTS.length > 0) {
+        productsToShow = DEFAULT_PRODUCTS;
+        console.log('Using DEFAULT_PRODUCTS, count:', productsToShow.length);
+    } else if (database && database.products && database.products.length > 0) {
+        productsToShow = database.products;
+        console.log('Using database.products, count:', productsToShow.length);
+    } else {
+        console.error('No products data found!');
+        menuGrid.innerHTML = '<div class="error-message">Produk tidak ditemukan. Silakan refresh halaman.</div>';
+        return;
+    }
+    
+    console.log('Products to show:', productsToShow.length);
+    
+    // Render produk pertama dulu sebagai test
+    if (productsToShow.length > 0) {
+        const testProduct = productsToShow[0];
+        console.log('Test product:', testProduct);
+        
+        // Test render satu produk
+        const testHTML = `
+            <div class="menu-item" onclick="addToCart(${JSON.stringify(testProduct).replace(/"/g, '&quot;')})">
+                <div class="menu-item-content">
+                    <div class="menu-icon">
+                        <i class="fas ${testProduct.icon}"></i>
+                    </div>
+                    <h4>${testProduct.name}</h4>
+                    <p class="menu-description">${testProduct.description || ''}</p>
+                    <p class="price">${formatRupiah(testProduct.price)}</p>
+                    <button class="btn-add">
+                        <i class="fas fa-plus"></i> Tambah
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        menuGrid.innerHTML = testHTML;
+        console.log('Test product rendered');
+        
+        // Setelah test berhasil, render semua
+        setTimeout(() => {
+            renderAllProducts(productsToShow);
+        }, 100);
+    }
+}
+
+function renderAllProducts(products) {
+    const menuGrid = document.getElementById('menuGrid');
+    const categoriesContainer = document.getElementById('productCategories');
+    
+    if (!menuGrid) return;
+    
+    // Get unique categories
+    const categories = ['all', 'paket', 'satuan', 'topping', 'saus'];
+    
+    // Render categories jika container ada
+    if (categoriesContainer) {
+        categoriesContainer.innerHTML = '';
+        categories.forEach(category => {
+            const button = document.createElement('button');
+            button.className = `category-btn ${category === currentCategory ? 'active' : ''}`;
+            button.textContent = category === 'all' ? 'Semua' : 
+                               category === 'paket' ? 'Paket' :
+                               category === 'satuan' ? 'Satuan' :
+                               category === 'topping' ? 'Topping' : 'Saus';
+            button.onclick = () => {
+                currentCategory = category;
+                renderAllProducts(products);
+                document.querySelectorAll('.category-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                button.classList.add('active');
+            };
+            categoriesContainer.appendChild(button);
+        });
+    }
+    
+    // Render products based on current category
+    let productsToShow = products;
+    if (currentCategory !== 'all') {
+        productsToShow = products.filter(p => p.category === currentCategory);
+    }
+    
+    let html = '';
+    productsToShow.forEach(product => {
+        html += `
+            <div class="menu-item" onclick="addToCart(${JSON.stringify(product).replace(/"/g, '&quot;')})">
+                <div class="menu-item-content">
+                    <div class="menu-icon">
+                        <i class="fas ${product.icon}"></i>
+                    </div>
+                    <h4>${product.name}</h4>
+                    <p class="menu-description">${product.description || ''}</p>
+                    <p class="price">${formatRupiah(product.price)}</p>
+                    <button class="btn-add">
+                        <i class="fas fa-plus"></i> Tambah
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    menuGrid.innerHTML = html;
+    console.log(`Rendered ${productsToShow.length} products`);
+}
     
     // Setup event listeners
     const clearBtn = document.getElementById('clearBtn');
