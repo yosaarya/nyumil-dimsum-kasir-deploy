@@ -516,3 +516,337 @@ function renderAllProducts(products) {
     
     console.log('Kasir system initialized');
 }
+// kasir.js - WITH FALLBACK RENDER
+
+// ===== CART SYSTEM =====
+let cart = [];
+let currentCategory = 'all';
+
+// Initialize Cart
+function initCart() {
+    console.log('🔍 initCart() called');
+    const savedCart = localStorage.getItem('nyumil_cart');
+    if (savedCart) {
+        try {
+            cart = JSON.parse(savedCart);
+            console.log('📦 Cart loaded from localStorage:', cart.length, 'items');
+            updateCartDisplay();
+        } catch (e) {
+            console.error('❌ Error parsing cart:', e);
+            cart = [];
+        }
+    }
+}
+
+// Save Cart to LocalStorage
+function saveCart() {
+    localStorage.setItem('nyumil_cart', JSON.stringify(cart));
+}
+
+// Add to Cart - SIMPLIFIED
+function addToCart(product) {
+    console.log('➕ Adding to cart:', product.name);
+    
+    // Check if product is an object or just ID
+    if (typeof product === 'number') {
+        // Find product by ID
+        const productObj = DEFAULT_PRODUCTS.find(p => p.id === product);
+        if (!productObj) {
+            console.error('❌ Product not found:', product);
+            return;
+        }
+        product = productObj;
+    }
+    
+    const existingItem = cart.find(item => item.id === product.id);
+    
+    if (existingItem) {
+        existingItem.quantity += 1;
+    } else {
+        cart.push({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            cost: product.cost,
+            quantity: 1
+        });
+    }
+    
+    saveCart();
+    updateCartDisplay();
+    
+    // Show notification if function exists
+    if (typeof showNotification === 'function') {
+        showNotification(`${product.name} ditambahkan`, 'success');
+    } else {
+        alert(`${product.name} ditambahkan ke keranjang`);
+    }
+}
+
+// Remove from Cart
+function removeFromCart(productId) {
+    cart = cart.filter(item => item.id !== productId);
+    saveCart();
+    updateCartDisplay();
+}
+
+// Update Quantity
+function updateQuantity(productId, change) {
+    const item = cart.find(item => item.id === productId);
+    if (item) {
+        item.quantity += change;
+        
+        if (item.quantity <= 0) {
+            removeFromCart(productId);
+        } else {
+            saveCart();
+            updateCartDisplay();
+        }
+    }
+}
+
+// Clear Cart
+function clearCart() {
+    if (cart.length === 0) {
+        alert('Keranjang sudah kosong');
+        return;
+    }
+    
+    if (confirm('Hapus semua item dari keranjang?')) {
+        cart = [];
+        saveCart();
+        updateCartDisplay();
+        alert('Keranjang dikosongkan');
+    }
+}
+
+// Update Cart Display - ROBUST VERSION
+function updateCartDisplay() {
+    console.log('🛒 updateCartDisplay() called');
+    
+    const elements = {
+        orderList: document.getElementById('orderList'),
+        emptyOrder: document.getElementById('emptyOrder'),
+        orderCount: document.getElementById('orderCount'),
+        subtotalAmount: document.getElementById('subtotalAmount'),
+        totalAmount: document.getElementById('totalAmount')
+    };
+    
+    // Log which elements are missing
+    Object.entries(elements).forEach(([name, element]) => {
+        if (!element) console.warn(`⚠️ Element #${name} not found`);
+    });
+    
+    if (!elements.orderList || !elements.emptyOrder) {
+        console.error('❌ Required cart elements missing');
+        return;
+    }
+    
+    // Hide/show empty message
+    elements.emptyOrder.style.display = cart.length === 0 ? 'flex' : 'none';
+    
+    // Update counts
+    if (elements.orderCount) {
+        elements.orderCount.textContent = cart.length;
+    }
+    
+    // Calculate totals
+    let subtotal = 0;
+    cart.forEach(item => {
+        subtotal += item.price * item.quantity;
+    });
+    
+    // Update amounts
+    if (elements.subtotalAmount) {
+        elements.subtotalAmount.textContent = formatRupiah ? formatRupiah(subtotal) : `Rp ${subtotal}`;
+    }
+    
+    if (elements.totalAmount) {
+        elements.totalAmount.textContent = formatRupiah ? formatRupiah(subtotal) : `Rp ${subtotal}`;
+    }
+    
+    // Render cart items
+    if (elements.orderList) {
+        elements.orderList.innerHTML = '';
+        
+        cart.forEach(item => {
+            const itemTotal = item.price * item.quantity;
+            
+            const orderItem = document.createElement('div');
+            orderItem.className = 'order-item';
+            orderItem.style.cssText = 'border: 1px solid #ddd; margin: 5px; padding: 10px;';
+            orderItem.innerHTML = `
+                <div>
+                    <strong>${item.name}</strong><br>
+                    <small>${formatRupiah ? formatRupiah(item.price) : `Rp ${item.price}`} x ${item.quantity}</small>
+                </div>
+                <div>
+                    <button onclick="updateQuantity(${item.id}, -1)">-</button>
+                    <span style="margin: 0 10px;">${item.quantity}</span>
+                    <button onclick="updateQuantity(${item.id}, 1)">+</button>
+                    <button onclick="removeFromCart(${item.id})" style="margin-left: 10px;">Hapus</button>
+                </div>
+                <div>
+                    <strong>${formatRupiah ? formatRupiah(itemTotal) : `Rp ${itemTotal}`}</strong>
+                </div>
+            `;
+            
+            elements.orderList.appendChild(orderItem);
+        });
+    }
+}
+
+// ===== PRODUCT DISPLAY =====
+function renderProducts() {
+    console.log('🎨 renderProducts() called');
+    
+    const menuGrid = document.getElementById('menuGrid');
+    const categoriesContainer = document.getElementById('productCategories');
+    
+    if (!menuGrid) {
+        console.error('❌ #menuGrid element not found!');
+        
+        // Try to find alternative or create one
+        const posTab = document.getElementById('pos-tab');
+        if (posTab && !menuGrid) {
+            console.log('Creating menuGrid manually...');
+            const newMenuGrid = document.createElement('div');
+            newMenuGrid.id = 'menuGrid';
+            newMenuGrid.className = 'menu-grid';
+            newMenuGrid.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;';
+            posTab.appendChild(newMenuGrid);
+            return renderProducts(); // Retry
+        }
+        return;
+    }
+    
+    console.log('✅ menuGrid found');
+    
+    // Get products data
+    let productsToShow = [];
+    
+    if (typeof DEFAULT_PRODUCTS !== 'undefined' && DEFAULT_PRODUCTS.length > 0) {
+        productsToShow = DEFAULT_PRODUCTS;
+        console.log(`✅ Using DEFAULT_PRODUCTS: ${productsToShow.length} items`);
+    } else if (database && database.products && database.products.length > 0) {
+        productsToShow = database.products;
+        console.log(`✅ Using database.products: ${productsToShow.length} items`);
+    } else {
+        console.error('❌ No products data available!');
+        menuGrid.innerHTML = `
+            <div style="grid-column: 1 / -1; padding: 20px; text-align: center; border: 2px dashed #ccc;">
+                <h3>⚠️ Data Produk Tidak Ditemukan</h3>
+                <p>Silakan refresh halaman atau cek console</p>
+                <button onclick="location.reload()">Refresh Halaman</button>
+            </div>
+        `;
+        return;
+    }
+    
+    // Render products - SIMPLE VERSION
+    let html = '';
+    productsToShow.forEach(product => {
+        html += `
+            <div class="menu-item" onclick="addToCart(${product.id})" 
+                 style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; cursor: pointer;">
+                <div style="text-align: center;">
+                    <div style="font-size: 24px; color: #e63946; margin-bottom: 10px;">
+                        <i class="fas ${product.icon || 'fa-box'}"></i>
+                    </div>
+                    <h4 style="margin: 10px 0;">${product.name}</h4>
+                    <p style="color: #666; font-size: 12px; margin: 5px 0;">${product.description || ''}</p>
+                    <p style="font-weight: bold; color: #e63946; font-size: 18px; margin: 10px 0;">
+                        ${formatRupiah ? formatRupiah(product.price) : `Rp ${product.price}`}
+                    </p>
+                    <button class="btn-add" 
+                            style="background: #e63946; color: white; border: none; padding: 8px 15px; border-radius: 4px; width: 100%;">
+                        <i class="fas fa-plus"></i> Tambah
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    menuGrid.innerHTML = html;
+    console.log(`✅ Rendered ${productsToShow.length} products`);
+}
+
+// ===== CHECKOUT PROCESS =====
+function checkout() {
+    if (cart.length === 0) {
+        alert('Keranjang kosong! Tambahkan produk terlebih dahulu.');
+        return;
+    }
+    
+    const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    
+    if (confirm(`Total: ${formatRupiah ? formatRupiah(total) : `Rp ${total}`}\n\nKonfirmasi pembayaran?`)) {
+        // Create simple transaction
+        const transaction = {
+            id: Date.now(),
+            date: new Date().toISOString().split('T')[0],
+            time: new Date().toLocaleTimeString(),
+            items: [...cart],
+            total: total
+        };
+        
+        // Save to database if available
+        if (database && typeof database.addTransaction === 'function') {
+            database.addTransaction(transaction).then(() => {
+                alert('✅ Transaksi berhasil!');
+                cart = [];
+                saveCart();
+                updateCartDisplay();
+            }).catch(error => {
+                console.error('Transaction error:', error);
+                alert('Transaksi berhasil (offline mode)');
+                cart = [];
+                saveCart();
+                updateCartDisplay();
+            });
+        } else {
+            // Fallback: save to localStorage
+            const transactions = JSON.parse(localStorage.getItem('nyumil_transactions') || '[]');
+            transactions.push(transaction);
+            localStorage.setItem('nyumil_transactions', JSON.stringify(transactions));
+            
+            alert('✅ Transaksi berhasil!');
+            cart = [];
+            saveCart();
+            updateCartDisplay();
+        }
+    }
+}
+
+// ===== INITIALIZATION =====
+function initKasir() {
+    console.log('🚀 initKasir() called');
+    
+    // 1. Initialize cart
+    initCart();
+    
+    // 2. Render products with delay to ensure DOM is ready
+    setTimeout(() => {
+        renderProducts();
+        
+        // 3. Setup event listeners
+        const clearBtn = document.getElementById('clearBtn');
+        const checkoutBtn = document.getElementById('checkoutBtn');
+        
+        if (clearBtn) {
+            clearBtn.addEventListener('click', clearCart);
+            console.log('✅ clearBtn event listener added');
+        } else {
+            console.warn('⚠️ clearBtn not found');
+        }
+        
+        if (checkoutBtn) {
+            checkoutBtn.addEventListener('click', checkout);
+            console.log('✅ checkoutBtn event listener added');
+        } else {
+            console.warn('⚠️ checkoutBtn not found');
+        }
+        
+        console.log('🎉 Kasir system initialized successfully');
+    }, 100);
+}
