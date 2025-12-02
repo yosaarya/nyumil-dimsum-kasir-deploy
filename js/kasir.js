@@ -517,9 +517,6 @@ function renderAllProducts(products) {
     console.log('Kasir system initialized');
 }
 // kasir.js - WITH FALLBACK RENDER
-
-// ===== CART SYSTEM =====
-let cart = [];
 let currentCategory = 'all';
 
 // Initialize Cart
