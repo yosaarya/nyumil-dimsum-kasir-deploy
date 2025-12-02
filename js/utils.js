@@ -6,7 +6,7 @@ function formatRupiah(amount) {
 }
 
 // Format Date
-export function formatDate(date, withTime = false) {
+function formatDate(date, withTime = false) {
     const d = new Date(date);
     const options = { 
         year: 'numeric', 
@@ -23,12 +23,12 @@ export function formatDate(date, withTime = false) {
 }
 
 // Get Today's Date
-export function getToday() {
+function getToday() {
     return new Date().toISOString().split('T')[0];
 }
 
 // Get Current Time
-export function getCurrentTime() {
+function getCurrentTime() {
     return new Date().toLocaleTimeString('id-ID', { 
         hour: '2-digit', 
         minute: '2-digit' 
@@ -47,7 +47,7 @@ function showNotification(message, type = 'success') {
 }
 
 // Confirm Dialog
-export function confirmDialog(message) {
+function confirmDialog(message) {
     return new Promise((resolve) => {
         const modal = document.createElement('div');
         modal.className = 'modal active';
@@ -78,7 +78,7 @@ export function confirmDialog(message) {
 }
 
 // Debounce Function
-export function debounce(func, wait) {
+function debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {
         const later = () => {
@@ -91,82 +91,82 @@ export function debounce(func, wait) {
 }
 
 // Generate Unique ID
-export function generateId() {
+function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
 // Calculate Profit
-export function calculateProfit(price, cost, quantity = 1) {
+function calculateProfit(price, cost, quantity = 1) {
     return (price - cost) * quantity;
 }
 
 // Calculate Total
-export function calculateTotal(items) {
+function calculateTotal(items) {
     return items.reduce((total, item) => {
         return total + (item.price * item.quantity);
     }, 0);
 }
 
 // Calculate Total Cost
-export function calculateTotalCost(items) {
+function calculateTotalCost(items) {
     return items.reduce((total, item) => {
         return total + (item.cost * item.quantity);
     }, 0);
 }
 
 // Calculate Total Profit
-export function calculateTotalProfit(items) {
+function calculateTotalProfit(items) {
     return items.reduce((total, item) => {
         return total + ((item.price - item.cost) * item.quantity);
     }, 0);
 }
 
 // Validate Email
-export function isValidEmail(email) {
+function isValidEmail(email) {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(email);
 }
 
 // Validate Phone Number
-export function isValidPhone(phone) {
+function isValidPhone(phone) {
     const re = /^[0-9]{10,13}$/;
     return re.test(phone);
 }
 
 // Format Phone Number
-export function formatPhone(phone) {
+function formatPhone(phone) {
     return phone.replace(/(\d{4})(\d{4})(\d{4})/, '$1-$2-$3');
 }
 
 // Get Query Parameter
-export function getQueryParam(name) {
+function getQueryParam(name) {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get(name);
 }
 
 // Set Query Parameter
-export function setQueryParam(name, value) {
+function setQueryParam(name, value) {
     const url = new URL(window.location);
     url.searchParams.set(name, value);
     window.history.pushState({}, '', url);
 }
 
 // Remove Query Parameter
-export function removeQueryParam(name) {
+function removeQueryParam(name) {
     const url = new URL(window.location);
     url.searchParams.delete(name);
     window.history.pushState({}, '', url);
 }
 
 // Copy to Clipboard
-export function copyToClipboard(text) {
+function copyToClipboard(text) {
     return navigator.clipboard.writeText(text)
         .then(() => true)
         .catch(() => false);
 }
 
 // Download File
-export function downloadFile(filename, content, type = 'text/plain') {
+function downloadFile(filename, content, type = 'text/plain') {
     const blob = new Blob([content], { type });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -179,7 +179,7 @@ export function downloadFile(filename, content, type = 'text/plain') {
 }
 
 // Read File
-export function readFile(file) {
+function readFile(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (e) => resolve(e.target.result);
@@ -189,7 +189,7 @@ export function readFile(file) {
 }
 
 // Parse CSV
-export function parseCSV(csv) {
+function parseCSV(csv) {
     const lines = csv.split('\n');
     const result = [];
     const headers = lines[0].split(',');
@@ -209,7 +209,7 @@ export function parseCSV(csv) {
 }
 
 // Export to CSV
-export function exportToCSV(data, filename) {
+function exportToCSV(data, filename) {
     const csv = convertToCSV(data);
     downloadFile(filename, csv, 'text/csv');
 }
@@ -228,7 +228,7 @@ function convertToCSV(data) {
 }
 
 // Group By
-export function groupBy(array, key) {
+function groupBy(array, key) {
     return array.reduce((result, item) => {
         const group = item[key];
         if (!result[group]) {
@@ -240,7 +240,7 @@ export function groupBy(array, key) {
 }
 
 // Sort By
-export function sortBy(array, key, order = 'asc') {
+function sortBy(array, key, order = 'asc') {
     return [...array].sort((a, b) => {
         const aVal = a[key];
         const bVal = b[key];
@@ -254,7 +254,7 @@ export function sortBy(array, key, order = 'asc') {
 }
 
 // Filter Array
-export function filterArray(array, filters) {
+function filterArray(array, filters) {
     return array.filter(item => {
         return Object.entries(filters).every(([key, value]) => {
             if (Array.isArray(value)) {
@@ -266,25 +266,25 @@ export function filterArray(array, filters) {
 }
 
 // Calculate Average
-export function calculateAverage(array, key) {
+function calculateAverage(array, key) {
     if (array.length === 0) return 0;
     const sum = array.reduce((total, item) => total + (item[key] || 0), 0);
     return sum / array.length;
 }
 
 // Calculate Sum
-export function calculateSum(array, key) {
+function calculateSum(array, key) {
     return array.reduce((total, item) => total + (item[key] || 0), 0);
 }
 
 // Calculate Percentage
-export function calculatePercentage(part, total) {
+function calculatePercentage(part, total) {
     if (total === 0) return 0;
     return ((part / total) * 100).toFixed(1);
 }
 
 // Generate Random Color
-export function generateRandomColor() {
+function generateRandomColor() {
     const colors = [
         '#e63946', '#457b9d', '#2a9d8f', 
         '#e9c46a', '#f4a261', '#9d4edd',
@@ -294,45 +294,45 @@ export function generateRandomColor() {
 }
 
 // Format Number with Commas
-export function formatNumber(number) {
+function formatNumber(number) {
     return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
 // Truncate Text
-export function truncateText(text, length) {
+function truncateText(text, length) {
     if (text.length <= length) return text;
     return text.substring(0, length) + '...';
 }
 
 // Get File Extension
-export function getFileExtension(filename) {
+function getFileExtension(filename) {
     return filename.split('.').pop().toLowerCase();
 }
 
 // Is Image File
-export function isImageFile(filename) {
+function isImageFile(filename) {
     const extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
     return extensions.includes(getFileExtension(filename));
 }
 
 // Is PDF File
-export function isPDFFile(filename) {
+function isPDFFile(filename) {
     return getFileExtension(filename) === 'pdf';
 }
 
 // Is Excel File
-export function isExcelFile(filename) {
+function isExcelFile(filename) {
     const extensions = ['xls', 'xlsx', 'csv'];
     return extensions.includes(getFileExtension(filename));
 }
 
 // Delay Function
-export function delay(ms) {
+function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 // Retry Function
-export async function retry(fn, retries = 3, delayMs = 1000) {
+async function retry(fn, retries = 3, delayMs = 1000) {
     for (let i = 0; i < retries; i++) {
         try {
             return await fn();
@@ -344,7 +344,7 @@ export async function retry(fn, retries = 3, delayMs = 1000) {
 }
 
 // Throttle Function
-export function throttle(func, limit) {
+function throttle(func, limit) {
     let inThrottle;
     return function() {
         const args = arguments;
