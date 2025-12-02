@@ -3,8 +3,22 @@
 if (typeof DEFAULT_PRODUCTS === 'undefined') {
     // Salin dari database.js
     const DEFAULT_PRODUCTS = [
-        { id: 1, name: "Dimsum Ori Mentai (Small 3pcs)", price: 18000, cost: 10000, icon: "fa-drumstick-bite", category: "paket", description: "Dimsum 3 + Saus Mentai + Topping + Packaging", stock: 100 },
-        // ... dan seterusnya (salin semua dari database.js)
+         { id: 1, name: "Dimsum Ori Mentai (Small 3pcs)", price: 18000, cost: 10000, icon: "fa-drumstick-bite", category: "paket", description: "Dimsum 3 + Saus Mentai + Topping + Packaging", stock: 100 },
+    { id: 2, name: "Dimsum Ori Mentai (Medium 6pcs)", price: 28000, cost: 15000, icon: "fa-drumstick-bite", category: "paket", description: "Dimsum 6 + Saus Mentai + Topping + Packaging", stock: 100 },
+    { id: 3, name: "Dimsum Ori Mentai (Large 16pcs)", price: 75000, cost: 40000, icon: "fa-drumstick-bite", category: "paket", description: "Dimsum 16 + Saus Mentai + Topping + Packaging", stock: 100 },
+    { id: 4, name: "Dimmoza Mentai (Small 3pcs)", price: 21000, cost: 11500, icon: "fa-cheese", category: "paket", description: "DSM + Mozzarella", stock: 100 },
+    { id: 5, name: "Dimsum Mentai Cheesy (Small 3pcs)", price: 21000, cost: 11500, icon: "fa-cheese", category: "paket", description: "DSM + Mozzarella", stock: 100 },
+    { id: 6, name: "Dimsum Mentai Double Cheesy (Small 3pcs)", price: 24000, cost: 13000, icon: "fa-cheese", category: "paket", description: "DSM + Double Mozzarella", stock: 100 },
+    { id: 7, name: "Dimsum Mentai Tobiko Cheesy (Small 3pcs)", price: 23000, cost: 12500, icon: "fa-fish", category: "paket", description: "DSM + Mozza + Tobiko", stock: 100 },
+    { id: 8, name: "Gyoza Mentai (Small 5pcs)", price: 18000, cost: 10000, icon: "fa-dumpling", category: "paket", description: "Gyoza 5 + Saus Mentai + Topping + Packaging", stock: 100 },
+    { id: 9, name: "Gyoza Mentai (Medium 8pcs)", price: 24000, cost: 13000, icon: "fa-dumpling", category: "paket", description: "Gyoza 8 + Saus Mentai + Topping + Packaging", stock: 100 },
+    { id: 10, name: "Dimsum Ori (Satuan)", price: 3000, cost: 1500, icon: "fa-utensils", category: "satuan", description: "", stock: 1000 },
+    { id: 11, name: "Dimmoza (Satuan)", price: 4000, cost: 2000, icon: "fa-cheese", category: "satuan", description: "", stock: 1000 },
+    { id: 12, name: "Gyoza (Satuan)", price: 2000, cost: 1000, icon: "fa-dumpling", category: "satuan", description: "", stock: 1000 },
+    { id: 13, name: "Mozzarella", price: 1000, cost: 500, icon: "fa-cheese", category: "topping", description: "", stock: 1000 },
+    { id: 14, name: "Tobiko", price: 3000, cost: 1500, icon: "fa-fish", category: "topping", description: "", stock: 500 },
+    { id: 15, name: "Creamy Bolognese 50ml", price: 7000, cost: 3500, icon: "fa-wine-bottle", category: "saus", description: "", stock: 200 },
+    { id: 16, name: "Creamy Bolognese 80ml", price: 10000, cost: 5000, icon: "fa-wine-bottle", category: "saus", description: "", stock: 200 }
     ];
 }
 // ===== CART SYSTEM =====
