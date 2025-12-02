@@ -182,7 +182,7 @@
         </main>
     </div>
 
-    <!-- JavaScript Files - LOAD AT BOTTOM -->
+       <!-- JavaScript Files - LOAD AT BOTTOM -->
     <script src="js/utils.js"></script>
     <script src="js/database.js"></script>
     <script src="js/kasir.js"></script>
@@ -190,102 +190,33 @@
     <script src="js/chart.js"></script>
     <script src="js/app.js"></script>
     
-    <!-- INITIALIZATION SCRIPT -->
+    <!-- INITIALIZATION SCRIPT - SIMPLIFIED -->
     <script>
     console.log('=== STARTING APP ===');
     
-    // 1. First, check if all elements exist
-    function checkElements() {
-        console.log('Checking HTML elements...');
-        const elements = [
-            'notification', 'menuGrid', 'orderList', 'emptyOrder',
-            'orderCount', 'subtotalAmount', 'totalAmount',
-            'clearBtn', 'checkoutBtn', 'productCategories',
-            'pos-tab', 'stats-tab', 'history-tab', 'products-tab'
-        ];
-        
-        elements.forEach(id => {
-            const el = document.getElementById(id);
-            console.log(`${id}: ${el ? '✅' : '❌'}`);
-        });
-    }
-    
-    // 2. Check JavaScript functions
-    function checkFunctions() {
-        console.log('Checking JavaScript functions...');
-        const functions = [
-            'formatRupiah', 'database', 'initKasir', 'app'
-        ];
-        
-        functions.forEach(fn => {
-            const exists = typeof window[fn] !== 'undefined';
-            console.log(`${fn}: ${exists ? '✅' : '❌'}`);
-        });
-    }
-    
-    // 3. Initialize when everything is ready
-    function initializeApp() {
-        console.log('Initializing application...');
-        
-        // Check elements and functions
-        checkElements();
-        checkFunctions();
-        
-        // Initialize app
+    function waitForApp() {
+        // Check if app is available
         if (typeof app !== 'undefined' && app.init) {
-            app.init();
+            console.log('✅ App found, initializing...');
+            
+            // Give a moment for everything to load
+            setTimeout(() => {
+                app.init();
+                console.log('=== APP STARTED ===');
+            }, 100);
         } else {
-            console.error('App not found! Loading fallback...');
-            loadFallback();
+            // Try again after 100ms
+            console.log('⏳ Waiting for app to load...');
+            setTimeout(waitForApp, 100);
         }
     }
     
-    // 4. Fallback if app fails
-    function loadFallback() {
-        console.log('Loading fallback mode...');
-        
-        // Try to load products directly
-        if (typeof DEFAULT_PRODUCTS !== 'undefined' && DEFAULT_PRODUCTS.length > 0) {
-            renderFallbackProducts();
-        }
-        
-        // Setup simple cart
-        window.cart = [];
-        
-        // Add to cart function
-        window.addToCart = function(product) {
-            console.log('Adding to cart:', product);
-            alert(`Added: ${product.name}`);
-        };
-    }
-    
-    // 5. Fallback product renderer
-    function renderFallbackProducts() {
-        const menuGrid = document.getElementById('menuGrid');
-        if (!menuGrid) return;
-        
-        let html = '';
-        DEFAULT_PRODUCTS.slice(0, 6).forEach(product => {
-            html += `
-                <div class="menu-item" onclick="addToCart(${JSON.stringify(product).replace(/"/g, '&quot;')})">
-                    <h3>${product.name}</h3>
-                    <p>${formatRupiah ? formatRupiah(product.price) : 'Rp ' + product.price}</p>
-                    <button class="btn-add">Tambah</button>
-                </div>
-            `;
-        });
-        
-        menuGrid.innerHTML = html;
-    }
-    
-    // 6. Start everything
+    // Start the app when DOM is ready
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializeApp);
+        document.addEventListener('DOMContentLoaded', waitForApp);
     } else {
-        initializeApp();
+        waitForApp();
     }
-    
-    console.log('=== APP STARTED ===');
     </script>
 </body>
 </html>
