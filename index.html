@@ -30,16 +30,23 @@
     <script src="js/chart.js"></script>
     <script src="js/app.js"></script>
     
-    <!-- SIMPLE DEBUG SCRIPT -->
-    <script>
-    // Just for debugging, no initialization
-    window.addEventListener('load', function() {
-        console.log('=== DEBUG INFO ===');
-        console.log('Database:', typeof database);
-        console.log('Chart:', typeof Chart);
-        console.log('formatRupiah:', typeof formatRupiah);
-        console.log('App initialized:', window.appInitialized);
-    });
-    </script>
+   <script>
+// Debug script - cek apakah element HTML ada
+console.log('=== DEBUG ELEMENTS ===');
+console.log('menuGrid:', document.getElementById('menuGrid'));
+console.log('orderList:', document.getElementById('orderList'));
+console.log('productCategories:', document.getElementById('productCategories'));
+console.log('clearBtn:', document.getElementById('clearBtn'));
+console.log('checkoutBtn:', document.getElementById('checkoutBtn'));
+
+// Cek data
+console.log('=== DEBUG DATA ===');
+console.log('DEFAULT_PRODUCTS:', typeof DEFAULT_PRODUCTS);
+if (typeof DEFAULT_PRODUCTS !== 'undefined') {
+    console.log('Product count:', DEFAULT_PRODUCTS.length);
+}
+console.log('cart:', cart);
+console.log('database:', database);
+</script>
 </body>
 </html>
