@@ -331,6 +331,47 @@ function closeReceipt() {
 
 // ===== INITIALIZATION =====
 function initKasir() {
+    function initKasir() {
+    console.log('Initializing kasir...');
+    
+    initCart();
+    
+    // DEBUG: Cek elemen sebelum render
+    const menuGrid = document.getElementById('menuGrid');
+    console.log('menuGrid element:', menuGrid);
+    
+    if (!menuGrid) {
+        console.error('menuGrid not found!');
+        // Coba cari dengan selector lain
+        const menuGridAlt = document.querySelector('.menu-grid');
+        console.log('Alternative search:', menuGridAlt);
+    }
+    
+    renderProducts();
+    
+    // Setup event listeners
+    const clearBtn = document.getElementById('clearBtn');
+    const checkoutBtn = document.getElementById('checkoutBtn');
+    
+    console.log('clearBtn:', clearBtn);
+    console.log('checkoutBtn:', checkoutBtn);
+    
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearCart);
+        console.log('clearBtn event listener added');
+    } else {
+        console.error('clearBtn not found!');
+    }
+    
+    if (checkoutBtn) {
+        checkoutBtn.addEventListener('click', checkout);
+        console.log('checkoutBtn event listener added');
+    } else {
+        console.error('checkoutBtn not found!');
+    }
+    
+    console.log('Kasir system initialized');
+}
     initCart();
     renderProducts();
     
