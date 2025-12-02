@@ -837,3 +837,42 @@ function initKasir() {
         console.log('🎉 Kasir system initialized successfully');
     }, 100);
 }
+// Di akhir kasir.js, tambahkan fallback jika function tidak ada
+if (typeof initKasir === 'undefined') {
+    window.initKasir = function() {
+        console.log('Fallback initKasir called');
+        
+        // Initialize cart
+        const savedCart = localStorage.getItem('nyumil_cart');
+        if (savedCart) {
+            try {
+                cart = JSON.parse(savedCart);
+                console.log('Cart loaded:', cart.length, 'items');
+            } catch (e) {
+                console.error('Error loading cart:', e);
+                cart = [];
+            }
+        }
+        
+        // Try to render products
+        if (typeof renderProducts === 'function') {
+            renderProducts();
+        } else {
+            console.error('renderProducts function not found');
+        }
+        
+        // Setup event listeners
+        const clearBtn = document.getElementById('clearBtn');
+        const checkoutBtn = document.getElementById('checkoutBtn');
+        
+        if (clearBtn && typeof clearCart === 'function') {
+            clearBtn.addEventListener('click', clearCart);
+        }
+        
+        if (checkoutBtn && typeof checkout === 'function') {
+            checkoutBtn.addEventListener('click', checkout);
+        }
+        
+        console.log('Fallback kasir initialized');
+    };
+}
