@@ -1,50 +1,41 @@
-// app.js - SIMPLE VERSION
+// app.js - SIMPLE
+let appInitialized = false;
+
 const app = {
-    initialized: false,
-    
     async init() {
-        if (this.initialized) {
+        if (appInitialized) {
             console.log('App already initialized');
             return;
         }
         
-        this.initialized = true;
-        console.log('🚀 Starting application...');
+        appInitialized = true;
+        console.log('App starting...');
         
         try {
-            // 1. Setup tabs FIRST
-            this.setupTabs();
-            
-            // 2. Initialize database
+            // Initialize database
             if (typeof database !== 'undefined' && database.init) {
                 await database.init();
-                console.log('✅ Database initialized');
+                console.log('Database initialized');
             }
             
-            // 3. Initialize kasir
-            if (typeof initKasir === 'function') {
-                console.log('📦 Initializing kasir...');
-                initKasir();
-            } else {
-                console.warn('⚠️ initKasir function not found');
-            }
+            // Setup tabs
+            this.setupTabs();
             
-            // 4. Initialize statistics
-            if (typeof initStatistik === 'function') {
-                console.log('📊 Initializing statistics...');
-                initStatistik();
-            }
+            // Initialize kasir after delay
+            setTimeout(() => {
+                if (typeof initKasir === 'function') {
+                    initKasir();
+                }
+            }, 200);
             
-            console.log('🎉 Application ready!');
+            console.log('✅ App ready');
             
         } catch (error) {
-            console.error('❌ Application error:', error);
+            console.error('App error:', error);
         }
     },
     
     setupTabs() {
-        console.log('Setting up tabs...');
-        
         const tabs = document.querySelectorAll('.tab');
         const tabContents = document.querySelectorAll('.tab-content');
         
@@ -52,29 +43,25 @@ const app = {
             tab.addEventListener('click', () => {
                 const tabId = tab.dataset.tab;
                 
-                // Update active tab
+                // Update tabs
                 tabs.forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
                 
-                // Update active content
+                // Update contents
                 tabContents.forEach(content => {
                     content.classList.remove('active');
                     if (content.id === `${tabId}-tab`) {
                         content.classList.add('active');
-                        console.log(`Switched to ${tabId} tab`);
                     }
                 });
             });
         });
-        
-        console.log(`✅ ${tabs.length} tabs setup complete`);
     }
 };
 
-// Start when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    app.init();
-});
-
-// Make app globally available
-window.app = app;
+// Start once
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => app.init());
+} else {
+    setTimeout(() => app.init(), 100);
+}
