@@ -271,31 +271,91 @@ function checkout() {
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     
     if (confirm(`Total: ${formatRupiah(total)}\n\nKonfirmasi pembayaran?`)) {
-        // Simple transaction
+        // Buat ID transaksi unik
+        const transactionId = Date.now();
+        
+        // Buat objek transaksi lengkap
         const transaction = {
-            id: Date.now(),
+            id: transactionId,
             date: new Date().toISOString().split('T')[0],
             time: new Date().toLocaleTimeString(),
-            items: [...cart],
-            total: total
+            items: cart.map(item => ({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                cost: item.cost || 0,
+                quantity: item.quantity,
+                itemTotal: item.price * item.quantity
+            })),
+            subtotal: total,
+            total: total,
+            profit: cart.reduce((sum, item) => sum + ((item.price - (item.cost || 0)) * item.quantity), 0)
         };
         
-        console.log('💾 Saving transaction:', transaction); // LOG INI
+        console.log('💾 Saving transaction:', transaction);
         
-        // Save to localStorage
+        // Simpan ke localStorage (untuk riwayat)
         const transactions = JSON.parse(localStorage.getItem('nyumil_transactions') || '[]');
         transactions.push(transaction);
         localStorage.setItem('nyumil_transactions', JSON.stringify(transactions));
         
-        console.log('✅ Transaction saved. Total transactions:', transactions.length); // LOG INI
+        // Juga simpan ke dailyStats (untuk statistik)
+        const today = transaction.date;
+        const dailyStats = JSON.parse(localStorage.getItem('nyumil_dailyStats') || '{}');
         
-        alert('✅ Transaksi berhasil!');
+        if (!dailyStats[today]) {
+            dailyStats[today] = {
+                revenue: 0,
+                transactions: 0,
+                itemsSold: 0,
+                profit: 0,
+                items: {}
+            };
+        }
+        
+        // Update stats
+        dailyStats[today].revenue += total;
+        dailyStats[today].transactions += 1;
+        dailyStats[today].profit += transaction.profit;
+        
+        // Update items sold
+        transaction.items.forEach(item => {
+            dailyStats[today].itemsSold += item.quantity;
+            
+            if (!dailyStats[today].items[item.id]) {
+                dailyStats[today].items[item.id] = {
+                    name: item.name,
+                    quantity: 0,
+                    revenue: 0,
+                    profit: 0
+                };
+            }
+            
+            dailyStats[today].items[item.id].quantity += item.quantity;
+            dailyStats[today].items[item.id].revenue += item.itemTotal;
+            dailyStats[today].items[item.id].profit += (item.price - item.cost) * item.quantity;
+        });
+        
+        localStorage.setItem('nyumil_dailyStats', JSON.stringify(dailyStats));
+        
+        console.log('✅ Transaction saved to:', {
+            transactions: transactions.length,
+            dailyStats: dailyStats[today]
+        });
+        
+        // Tampilkan notifikasi
+        if (typeof showNotification === 'function') {
+            showNotification(`Transaksi #${transactionId} berhasil! Total: ${formatRupiah(total)}`, 'success');
+        } else {
+            alert(`✅ Transaksi berhasil!\nID: #${transactionId}\nTotal: ${formatRupiah(total)}`);
+        }
+        
+        // Reset cart
         cart = [];
         saveCart();
         updateCartDisplay();
     }
 }
-
 // ===== INITIALIZATION =====
 function initKasir() {
     console.log('🚀 initKasir() called');
