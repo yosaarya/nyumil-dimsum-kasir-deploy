@@ -99,77 +99,40 @@ function clearCart() {
     }
 }
 
-// Update Cart Display - ROBUST VERSION
+// Update Cart Display - FIXED VERSION
 function updateCartDisplay() {
     console.log('🛒 updateCartDisplay() called');
     
     // Dapatkan element setiap kali untuk menghindari null reference
-    const elements = {
-        orderList: document.getElementById('orderList'),
-        emptyOrder: document.getElementById('emptyOrder'),
-        orderCount: document.getElementById('orderCount'),
-        subtotalAmount: document.getElementById('subtotalAmount'),
-        totalAmount: document.getElementById('totalAmount')
-    };
+    const orderList = document.getElementById('orderList');
+    const emptyOrder = document.getElementById('emptyOrder');
+    const orderCount = document.getElementById('orderCount');
+    const subtotalAmount = document.getElementById('subtotalAmount');
+    const totalAmount = document.getElementById('totalAmount');
     
-    console.log('Elements found:', {
-        orderList: !!elements.orderList,
-        emptyOrder: !!elements.emptyOrder,
-        orderCount: !!elements.orderCount,
-        subtotalAmount: !!elements.subtotalAmount,
-        totalAmount: !!elements.totalAmount
+    // Debug: log status elements
+    console.log('Elements status:', {
+        orderList: !!orderList,
+        emptyOrder: !!emptyOrder,
+        orderCount: !!orderCount,
+        subtotalAmount: !!subtotalAmount,
+        totalAmount: !!totalAmount
     });
     
-    // Jika orderList tidak ditemukan, cari alternatif
-    if (!elements.orderList) {
-        console.warn('orderList not found, searching...');
-        // Coba cari di dalam active tab
-        const activeTab = document.querySelector('.tab-content.active');
-        if (activeTab) {
-            elements.orderList = activeTab.querySelector('#orderList');
-            console.log('Found in active tab:', !!elements.orderList);
-        }
+    // Jika orderList tidak ditemukan, return
+    if (!orderList) {
+        console.error('❌ orderList not found');
+        return;
     }
     
-    if (!elements.orderList || !elements.emptyOrder) {
-        console.error('❌ Required cart elements missing');
-        
-        // Fallback: buat element jika tidak ada
-        if (!elements.orderList) {
-            console.log('Creating fallback orderList...');
-            const orderPanel = document.querySelector('.order-panel');
-            if (orderPanel) {
-                const newOrderList = document.createElement('div');
-                newOrderList.id = 'orderList';
-                newOrderList.className = 'order-list';
-                orderPanel.insertBefore(newOrderList, orderPanel.querySelector('.order-summary'));
-                elements.orderList = newOrderList;
-            }
-        }
-        
-        if (!elements.emptyOrder) {
-            console.log('Creating fallback emptyOrder...');
-            if (elements.orderList) {
-                const newEmptyOrder = document.createElement('div');
-                newEmptyOrder.id = 'emptyOrder';
-                newEmptyOrder.className = 'empty-order';
-                newEmptyOrder.innerHTML = '<i class="fas fa-shopping-cart"></i><p>Belum ada pesanan</p>';
-                elements.orderList.appendChild(newEmptyOrder);
-                elements.emptyOrder = newEmptyOrder;
-            }
-        }
-        
-        if (!elements.orderList || !elements.emptyOrder) {
-            console.error('❌ Failed to create fallback elements');
-            return;
-        }
+    // Tampilkan/sembunyikan emptyOrder jika ada
+    if (emptyOrder) {
+        emptyOrder.style.display = cart.length === 0 ? 'flex' : 'none';
     }
     
-    // Update UI
-    elements.emptyOrder.style.display = cart.length === 0 ? 'flex' : 'none';
-    
-    if (elements.orderCount) {
-        elements.orderCount.textContent = cart.length;
+    // Update order count
+    if (orderCount) {
+        orderCount.textContent = cart.length;
     }
     
     // Calculate totals
@@ -179,16 +142,18 @@ function updateCartDisplay() {
     });
     
     // Update amounts
-    if (elements.subtotalAmount) {
-        elements.subtotalAmount.textContent = formatRupiah(subtotal);
+    if (subtotalAmount) {
+        subtotalAmount.textContent = formatRupiah(subtotal);
     }
     
-    if (elements.totalAmount) {
-        elements.totalAmount.textContent = formatRupiah(subtotal);
+    if (totalAmount) {
+        totalAmount.textContent = formatRupiah(subtotal);
     }
     
     // Render cart items
-    elements.orderList.innerHTML = '';
+    // Hapus semua order-item, tapi jangan hapus emptyOrder jika ada
+    const orderItems = orderList.querySelectorAll('.order-item');
+    orderItems.forEach(item => item.remove());
     
     if (cart.length > 0) {
         cart.forEach(item => {
@@ -213,11 +178,8 @@ function updateCartDisplay() {
                 </div>
             `;
             
-            elements.orderList.appendChild(orderItem);
+            orderList.appendChild(orderItem);
         });
-    } else {
-        // Show empty message
-        elements.orderList.appendChild(elements.emptyOrder);
     }
     
     console.log('✅ Cart updated:', cart.length, 'items');
