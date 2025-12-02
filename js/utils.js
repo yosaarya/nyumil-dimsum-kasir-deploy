@@ -1,12 +1,8 @@
 // ===== UTILITY FUNCTIONS =====
 
 // Format Currency (Rupiah)
-export function formatRupiah(amount) {
-    return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0
-    }).format(amount);
+function formatRupiah(amount) {
+  return 'Rp ' + amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
 // Format Date
@@ -40,17 +36,14 @@ export function getCurrentTime() {
 }
 
 // Show Notification
-export function showNotification(message, type = 'success', duration = 3000) {
-    const notification = document.getElementById('notification');
-    if (!notification) return;
-    
-    notification.textContent = message;
-    notification.className = `notification ${type}`;
-    notification.style.display = 'block';
-    
-    setTimeout(() => {
-        notification.style.display = 'none';
-    }, duration);
+function showNotification(message, type = 'success') {
+  const notification = document.getElementById('notification');
+  notification.textContent = message;
+  notification.className = `notification ${type}`;
+  notification.style.display = 'block';
+  setTimeout(() => {
+    notification.style.display = 'none';
+  }, 3000);
 }
 
 // Confirm Dialog
