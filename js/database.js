@@ -48,6 +48,9 @@ function getToday() {
 }
 
 // ===== DATABASE FUNCTIONS =====
+function formatRupiah(amount) {
+    return 'Rp ' + amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
 class Database {
     constructor() {
         this.db = null;
