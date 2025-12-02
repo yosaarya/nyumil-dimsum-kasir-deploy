@@ -1,52 +1,39 @@
-// app.js - FIXED VERSION (No double init)
+// app.js - SIMPLE VERSION
 let appInitialized = false;
 
 const app = {
-    currentTab: 'pos',
-    
     async init() {
-        // Prevent double initialization
         if (appInitialized) {
             console.log('App already initialized');
             return;
         }
         
         appInitialized = true;
-        console.log('App starting...');
+        console.log('App initializing...');
         
         try {
-            // Initialize database
-            if (typeof database !== 'undefined' && typeof database.init === 'function') {
+            // Initialize database if exists
+            if (typeof database !== 'undefined' && database.init) {
                 await database.init();
                 console.log('Database initialized');
-            } else {
-                console.error('Database not found');
-                return;
             }
+            
+            // Initialize kasir after a short delay
+            setTimeout(() => {
+                if (typeof initKasir === 'function') {
+                    initKasir();
+                } else {
+                    console.error('initKasir function not found');
+                }
+            }, 500);
             
             // Setup tabs
             this.setupTabs();
             
-            // Initialize kasir
-            if (typeof initKasir === 'function') {
-                initKasir();
-            }
-            
-            // Initialize statistics
-            if (typeof initStatistik === 'function') {
-                initStatistik();
-            }
-            
-            // Show initial tab
-            this.switchTab('pos');
-            
-            console.log('App initialized successfully!');
-            
-            // Remove the setTimeout notification to avoid errors
-            // showNotification('Aplikasi siap digunakan!');
+            console.log('✅ App initialized');
             
         } catch (error) {
-            console.error('App init failed:', error);
+            console.error('App initialization error:', error);
         }
     },
     
@@ -57,42 +44,30 @@ const app = {
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
                 const tabId = tab.dataset.tab;
-                this.switchTab(tabId);
+                
+                // Update active tab
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                // Update active content
+                tabContents.forEach(content => {
+                    content.classList.remove('active');
+                    if (content.id === `${tabId}-tab`) {
+                        content.classList.add('active');
+                    }
+                });
+                
+                console.log(`Switched to ${tabId} tab`);
             });
         });
         
         console.log('Tabs setup complete');
-    },
-    
-    switchTab(tabId) {
-        // Update active tab
-        document.querySelectorAll('.tab').forEach(t => {
-            t.classList.remove('active');
-            if (t.dataset.tab === tabId) t.classList.add('active');
-        });
-        
-        // Update active content
-        document.querySelectorAll('.tab-content').forEach(content => {
-            content.classList.remove('active');
-            if (content.id === `${tabId}-tab`) {
-                content.classList.add('active');
-            }
-        });
-        
-        this.currentTab = tabId;
-        console.log('Switched to tab:', tabId);
-        
-        // Load tab-specific data
-        if (tabId === 'stats' && typeof loadStatistics === 'function') {
-            setTimeout(() => loadStatistics(), 100);
-        }
     }
 };
 
-// Initialize only once when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    // Check if app is already initialized by other scripts
-    if (!appInitialized) {
-        app.init();
-    }
-});
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => app.init());
+} else {
+    app.init();
+}
