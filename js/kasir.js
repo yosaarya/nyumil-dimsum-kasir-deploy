@@ -280,10 +280,14 @@ function checkout() {
             total: total
         };
         
+        console.log('💾 Saving transaction:', transaction); // LOG INI
+        
         // Save to localStorage
         const transactions = JSON.parse(localStorage.getItem('nyumil_transactions') || '[]');
         transactions.push(transaction);
         localStorage.setItem('nyumil_transactions', JSON.stringify(transactions));
+        
+        console.log('✅ Transaction saved. Total transactions:', transactions.length); // LOG INI
         
         alert('✅ Transaksi berhasil!');
         cart = [];
