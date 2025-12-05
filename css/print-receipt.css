@@ -1,0 +1,57 @@
+@page {
+    size: 58mm auto;
+    margin: 0;
+}
+
+body {
+    font-family: monospace;
+    width: 58mm;
+    padding: 5px;
+    margin: 0;
+}
+
+.receipt {
+    width: 100%;
+}
+
+.center { text-align: center; }
+
+.title {
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.queue-number {
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.meta {
+    font-size: 11px;
+    line-height: 14px;
+}
+
+.row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    margin: 2px 0;
+}
+
+.total {
+    font-weight: bold;
+    font-size: 13px;
+}
+
+hr {
+    border: none;
+    border-top: 1px dashed #000;
+    margin: 4px 0;
+}
+
+.thanks {
+    margin-top: 8px;
+    font-size: 12px;
+}
+
+.small { font-size: 10px; }
